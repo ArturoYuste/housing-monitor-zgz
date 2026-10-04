@@ -50,7 +50,7 @@
         <button class="button" type="submit">Volver a revisar</button>
       </form>
       {% endif %}
-      <a class="button linkish" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
+      <a class="button secondary" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
     </div>
 
     {% if images|length > 1 or full %}
@@ -70,7 +70,7 @@
         {% if full|length > desc_preview_len %}
           <p class="desc-preview m-0" id="desc-short-{{ property.id }}">{{ full[:desc_preview_len] }}…</p>
           <p class="desc-full m-0" id="desc-full-{{ property.id }}" hidden>{{ full }}</p>
-          <button class="button linkish" type="button"
+          <button class="text-toggle" type="button"
             onclick="
               const shortEl=document.getElementById('desc-short-{{ property.id }}');
               const fullEl=document.getElementById('desc-full-{{ property.id }}');
