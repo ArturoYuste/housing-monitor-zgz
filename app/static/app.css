@@ -115,10 +115,20 @@ a {
 }
 
 .nav a.active,
+.chip.active,
 .button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: white;
+}
+
+.chip.active .count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.chip.active:hover {
+  border-color: var(--accent);
 }
 
 .panel {
@@ -153,7 +163,7 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 0.55rem;
-  margin-bottom: 1.25rem;
+  margin: 0 0 0.75rem;
 }
 
 .tabs a {
@@ -907,4 +917,20 @@ body.lightbox-open {
   object-fit: cover;
   border-radius: 10px;
   display: block;
+}
+
+
+#scan-feedback:empty {
+  display: none;
+}
+
+#tab-counts {
+  margin: 0;
+}
+
+.scan-loader.htmx-indicator:not(.htmx-request) {
+  display: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
