@@ -5,24 +5,25 @@
   'idealista': 'Idealista'
 }.get(property.portal, property.portal) %}
 <article class="property-card property-card--compact">
-  {% if property.main_image %}
-    <img src="{{ property.main_image }}" alt="" loading="lazy">
-  {% else %}
-    <div class="thumb-fallback"></div>
-  {% endif %}
-  <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
+  <div class="compact-media">
+    {% if property.main_image %}
+      <img src="{{ property.main_image }}" alt="" loading="lazy">
+    {% else %}
+      <div class="thumb-fallback"></div>
+    {% endif %}
+    <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
+  </div>
   <div class="compact-body">
     <div class="compact-top">
       <div>
         <h2 class="compact-title">{{ property.title }}</h2>
-        <p class="muted m-0">{{ property.location }} · <strong class="portal-inline">{{ portal_label }}</strong></p>
+        <p class="muted m-0 compact-loc">{{ property.location }}</p>
       </div>
       <strong class="compact-price">
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
       </strong>
     </div>
     <div class="property-meta">
-      <span class="meta-pill meta-pill--portal">{{ portal_label }}</span>
       {% if property.size_m2 %}<span class="meta-pill">{{ property.size_m2 }} m²</span>{% endif %}
       {% if property.rooms %}<span class="meta-pill">{{ property.rooms }} hab</span>{% endif %}
       {% if property.baths %}<span class="meta-pill">{{ property.baths }} baños</span>{% endif %}
