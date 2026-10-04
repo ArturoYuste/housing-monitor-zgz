@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+
+load_dotenv()
 from pathlib import Path
 
 from fastapi import FastAPI
