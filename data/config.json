@@ -1,37 +1,4 @@
 ﻿{
-  "province": "Zaragoza",
-  "search_outside_city": true,
-  "property_types": [
-    "house",
-    "chalet"
-  ],
-  "min_price": 50000,
-  "max_price": 180000,
-  "min_size_m2": 100,
-  "max_price_per_m2": null,
-  "min_floor": null,
-  "require_elevator": false,
-  "require_garden_or_plot": true,
-  "allow_full_renovation": true,
-  "min_rooms": 2,
-  "min_baths": 1,
-  "excluded_keywords": [
-    "okupado",
-    "subasta",
-    "sin posesion",
-    "sin posesión",
-    "alquilado",
-    "nuda propiedad",
-    "usufructo"
-  ],
-  "excluded_locations": [
-    "Zaragoza capital",
-    "Centro",
-    "Delicias",
-    "Actur",
-    "Universidad",
-    "Casco Histórico"
-  ],
   "towns": [
     "Cuarte de Huerva",
     "María de Huerva",
@@ -48,10 +15,50 @@
     "Botorrita",
     "Mozota"
   ],
+  "province": "Zaragoza",
+  "max_price": 180000,
+  "min_baths": 1,
+  "min_floor": null,
+  "min_price": 50000,
+  "min_rooms": 2,
+  "min_size_m2": 100,
+  "property_types": [
+    "house",
+    "chalet"
+  ],
+  "scan_max_towns": null,
   "enabled_portals": [
     "fotocasa",
     "habitaclia",
     "pisos.com"
   ],
-  "scan_max_towns": null
+  "max_price_per_m2": null,
+  "require_elevator": false,
+  "excluded_keywords": [
+    "okupado",
+    "subasta",
+    "sin posesion",
+    "sin posesión",
+    "alquilado",
+    "nuda propiedad",
+    "usufructo",
+    "piso en",
+    "apartamento en",
+    "estudio en",
+    "planta intermedia",
+    "gastos de comunidad",
+    "edificio de viviendas",
+    "bloque de pisos"
+  ],
+  "excluded_locations": [
+    "Zaragoza capital",
+    "Centro",
+    "Delicias",
+    "Actur",
+    "Universidad",
+    "Casco Histórico"
+  ],
+  "search_outside_city": true,
+  "allow_full_renovation": true,
+  "require_garden_or_plot": true
 }

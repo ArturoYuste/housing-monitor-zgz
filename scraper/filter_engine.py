@@ -14,7 +14,69 @@ HOUSE_TYPE_TOKENS = {
     "adosado",
     "pareado",
     "unifamiliar",
+    "countryhouse",
+    "semidetachedhouse",
+    "terracedhouse",
+    "house_chalet",
 }
+
+APARTMENT_TYPE_TOKENS = {
+    "flat",
+    "apartment",
+    "piso",
+    "apartamento",
+    "studio",
+    "estudio",
+    "loft",
+    "attic",
+    "penthouse",
+    "duplex",  # usually in-building in ES portals
+    "dúplex",
+}
+
+# URL path fragments that indicate an in-building dwelling.
+APARTMENT_URL_MARKERS = (
+    "/piso-",
+    "/piso/",
+    "/apartamento-",
+    "/apartamento/",
+    "/planta-intermedia/",
+    "/atico/",
+    "/ático/",
+    "/estudio-",
+    "/estudio/",
+    "/loft-",
+    "/loft/",
+    "/duplex-",
+    "/dúplex-",
+)
+
+# Strong text signals of flats in a building (not detached houses).
+APARTMENT_TEXT_PATTERNS = (
+    r"\bpiso\s+en\b",
+    r"\bapartamento\s+en\b",
+    r"\bestudio\s+en\b",
+    r"\bvivienda\s+en\s+planta\b",
+    r"\bplanta\s+(baja|[1-9]\d*|primera|segunda|tercera|cuarta|quinta)\b",
+    r"\bcon\s+ascensor\b",
+    r"\bgastos\s+de\s+comunidad\b",
+    r"\bedificio\s+de\s+viviendas\b",
+    r"\bbloque\s+de\s+pisos\b",
+    r"\burbanizaci[oó]n\s+de\s+pisos\b",
+    r"\bpiso\s+reformado\b",
+    r"\bpiso\s+exterior\b",
+    r"\bpiso\s+luminoso\b",
+)
+
+# Phrases that look apartment-like but are valid for houses/chalets.
+HOUSE_EXCEPTION_PATTERNS = (
+    r"\bapartamento\s+independiente\b",
+    r"\bcasa\s+con\s+apartamento\b",
+    r"\bchalet\s+con\s+apartamento\b",
+    r"\bsin\s+ascensor\b",
+    r"\bplanta\s+baja\s+de\s+(casa|chalet)\b",
+)
+
 
 GARDEN_TOKENS = (
     "jardin",
@@ -55,20 +117,68 @@ def _haystack(property_item: dict[str, Any]) -> str:
                 str(property_item.get("description", "")),
                 str(property_item.get("location", "")),
                 str(property_item.get("property_type", "")),
+                str(property_item.get("url", "")),
             ]
         )
     )
 
 
+def _is_apartment_in_building(property_item: dict[str, Any]) -> bool:
+    """Detect flats / dwellings inside a multi-unit building."""
+    explicit = _normalize(str(property_item.get("property_type", "")))
+    if explicit in APARTMENT_TYPE_TOKENS:
+        return True
+
+    url = _normalize(str(property_item.get("url", "")))
+    if any(marker in url for marker in APARTMENT_URL_MARKERS):
+        # Keep casa/chalet URLs that also contain a misleading fragment.
+        if not any(token in url for token in ("/casa-", "/casa/", "/chalet-", "/chalet/", "casas_y_chalets")):
+            return True
+
+    text = _haystack(property_item)
+    if any(re.search(pattern, text) for pattern in HOUSE_EXCEPTION_PATTERNS):
+        # Still reject if URL clearly says piso/apartamento.
+        if any(marker in url for marker in ("/piso-", "/piso/", "/apartamento-", "/apartamento/")):
+            return True
+        return False
+
+    if property_item.get("has_elevator") is True and explicit not in HOUSE_TYPE_TOKENS:
+        # Elevator is a strong building signal when type is not clearly a house.
+        return True
+
+    hits = sum(1 for pattern in APARTMENT_TEXT_PATTERNS if re.search(pattern, text))
+    if hits >= 2:
+        return True
+    if hits >= 1 and explicit and explicit not in HOUSE_TYPE_TOKENS:
+        return True
+
+    # Title starting with "Piso ..." is almost always a flat.
+    title = _normalize(str(property_item.get("title", "")))
+    if title.startswith("piso ") or title.startswith("apartamento ") or title.startswith("estudio "):
+        return True
+
+    return False
+
+
 def _is_house_like(property_item: dict[str, Any], config: dict[str, Any]) -> bool:
+    if _is_apartment_in_building(property_item):
+        return False
+
     wanted = {_normalize(x) for x in (config.get("property_types") or []) if str(x).strip()}
     if not wanted:
-        return True
+        wanted = set(HOUSE_TYPE_TOKENS)
+
     explicit = _normalize(str(property_item.get("property_type", "")))
+    if explicit in APARTMENT_TYPE_TOKENS:
+        return False
     if explicit and (explicit in wanted or explicit in HOUSE_TYPE_TOKENS):
         return True
+
     text = _haystack(property_item)
-    return any(token in text for token in HOUSE_TYPE_TOKENS)
+    url = _normalize(str(property_item.get("url", "")))
+    url_house = any(token in url for token in ("/casa-", "/casa/", "/chalet-", "/chalet/", "/casas/", "/chalets/"))
+    text_house = any(token in text for token in HOUSE_TYPE_TOKENS)
+    return bool(url_house or text_house)
 
 
 def _has_garden_or_plot(property_item: dict[str, Any]) -> bool:
@@ -88,6 +198,9 @@ def matches_filters(property_item: dict[str, Any], config: dict[str, Any]) -> tu
     price_per_m2 = property_item.get("price_per_m2")
     if price_per_m2 is None and price and size:
         price_per_m2 = round(price / size)
+
+    if _is_apartment_in_building(property_item):
+        return False, "apartment_in_building"
 
     if not _is_house_like(property_item, config):
         return False, "not_house_like"
@@ -113,9 +226,7 @@ def matches_filters(property_item: dict[str, Any], config: dict[str, Any]) -> tu
         if floor is not None and floor < min_floor:
             return False, "below_min_floor"
 
-    if config.get("require_elevator") and not property_item.get("has_elevator"):
-        return False, "missing_elevator"
-
+    # Elevator requirement is for flats; we seek houses, so ignore require_elevator.
     if config.get("require_garden_or_plot") and not _has_garden_or_plot(property_item):
         return False, "missing_garden_or_plot"
 

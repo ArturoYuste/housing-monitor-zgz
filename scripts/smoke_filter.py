@@ -36,6 +36,7 @@ def main() -> None:
         "baths": 1,
         "has_garden": True,
         "location": "Utebo",
+        "url": "https://www.pisos.com/comprar/casa-utebo-123/",
     }
     city_flat = {
         **good,
@@ -44,9 +45,26 @@ def main() -> None:
         "location": "Centro",
         "has_garden": False,
         "plot_m2": 0,
+        "url": "https://www.pisos.com/comprar/piso-centro-999/",
+    }
+    building_flat = {
+        **good,
+        "property_type": "house",  # mislabeled
+        "title": "Piso luminoso con ascensor",
+        "description": "Piso en planta tercera con ascensor y gastos de comunidad",
+        "url": "https://www.fotocasa.es/es/comprar/vivienda/utebo/123/d",
+        "has_elevator": True,
+    }
+    house_with_apartment = {
+        **good,
+        "title": "Chalet con apartamento independiente",
+        "description": "Casa con apartamento independiente y jardin",
+        "url": "https://www.fotocasa.es/es/comprar/vivienda/utebo/456/d",
     }
     assert matches_filters(good, config)[0] is True
     assert matches_filters(city_flat, config)[0] is False
+    assert matches_filters(building_flat, config)[0] is False
+    assert matches_filters(house_with_apartment, config)[0] is True
     print("smoke_filter: ok")
 
 

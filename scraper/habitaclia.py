@@ -30,7 +30,18 @@ def _parse_card(article, town: str) -> dict[str, Any] | None:
         return None
 
     lower_link = link.lower()
-    if any(token in lower_link for token in ("/piso/", "/planta-intermedia/", "/atico/")):
+    if any(
+        token in lower_link
+        for token in (
+            "/piso/",
+            "/planta-intermedia/",
+            "/atico/",
+            "/apartamento/",
+            "/estudio/",
+            "/duplex/",
+            "/loft/",
+        )
+    ):
         return None
 
     text = article.get_text(" ", strip=True)

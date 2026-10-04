@@ -18,6 +18,18 @@ HOUSE_SUBTYPES = {
     "countryhouse",
 }
 
+FLAT_SUBTYPES = {
+    "flat",
+    "apartment",
+    "attic",
+    "studio",
+    "loft",
+    "duplex",
+    "groundfloor",
+    "ground_floor",
+    "homefloor",
+}
+
 
 def _extract_real_estates(html: str) -> list[dict[str, Any]]:
     match = re.search(r'"realEstates"\s*:\s*\[', html)
@@ -44,22 +56,31 @@ def _map_item(item: dict[str, Any], town: str) -> dict[str, Any] | None:
     features = feature_map(item.get("features"))
     subtype = str(item.get("buildingSubtype") or "").lower()
     dynamic = {str(x).lower() for x in (item.get("dynamicFeatures") or [])}
+    path = ""
+    detail = item.get("detail") or {}
+    if isinstance(detail, dict):
+        path = str(detail.get("es-ES") or next(iter(detail.values()), "") or "")
+    path_l = path.lower()
+    if subtype in FLAT_SUBTYPES or any(
+        marker in path_l for marker in ("/piso-", "/piso/", "/apartamento", "/atico/", "/estudio")
+    ):
+        return None
     is_house = (
         subtype in HOUSE_SUBTYPES
         or "house" in subtype
         or "chalet" in subtype
         or "is_single_family_home" in dynamic
+        or "/chalet" in path_l
+        or "/casa" in path_l
     )
     if not is_house:
-        # Keep unknown subtypes if title/description clearly say house/chalet.
+        # Keep unknown subtypes only when clearly a detached house/chalet.
         blob = f"{item.get('description', '')} {item.get('location', '')}".lower()
-        if not any(token in blob for token in ("casa", "chalet", "adosado", "unifamiliar")):
+        if not any(token in blob for token in ("casa", "chalet", "adosado", "unifamiliar", "pareado")):
+            return None
+        if any(token in blob for token in ("piso en", "apartamento en", "con ascensor", "planta intermedia")):
             return None
 
-    detail = item.get("detail") or {}
-    path = ""
-    if isinstance(detail, dict):
-        path = detail.get("es-ES") or next(iter(detail.values()), "") or ""
     url = f"https://www.fotocasa.es{path}" if path.startswith("/") else path
     images: list[str] = []
     for media in item.get("multimedia") or []:

@@ -145,8 +145,9 @@ def _parse_card(card, town: str) -> dict[str, Any] | None:
     if not href:
         return None
     lower = href.lower()
-    if "/piso-" in lower and "/chalet-" not in lower and "/casa-" not in lower:
-        return None
+    if any(marker in lower for marker in ("/piso-", "/apartamento-", "/estudio-", "/atico-", "/ático-", "/duplex-", "/dúplex-")):
+        if "/chalet-" not in lower and "/casa-" not in lower and "/casa_" not in lower:
+            return None
 
     text = card.get_text(" ", strip=True)
     price_el = card.select_one(".ad-preview__price")
