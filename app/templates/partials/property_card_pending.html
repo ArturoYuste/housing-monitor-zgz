@@ -15,13 +15,14 @@
     <div class="compact-top">
       <div>
         <h2 class="compact-title">{{ property.title }}</h2>
-        <p class="muted m-0">{{ property.location }}</p>
+        <p class="muted m-0">{{ property.location }} · <strong class="portal-inline">{{ portal_label }}</strong></p>
       </div>
       <strong class="compact-price">
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
       </strong>
     </div>
     <div class="property-meta">
+      <span class="meta-pill meta-pill--portal">{{ portal_label }}</span>
       {% if property.size_m2 %}<span class="meta-pill">{{ property.size_m2 }} m²</span>{% endif %}
       {% if property.rooms %}<span class="meta-pill">{{ property.rooms }} hab</span>{% endif %}
       {% if property.baths %}<span class="meta-pill">{{ property.baths }} baños</span>{% endif %}

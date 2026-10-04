@@ -11,7 +11,7 @@
         <h2 class="compact-title">{{ property.title }}</h2>
         <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
       </div>
-      <p class="muted m-0">{{ property.location }} ·
+      <p class="muted m-0">{{ property.location }} · <strong class="portal-inline">{{ portal_label }}</strong> ·
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
       </p>
     </div>
@@ -37,6 +37,7 @@
   {% endif %}
 
   <div class="property-meta">
+    <span class="meta-pill meta-pill--portal">{{ portal_label }}</span>
     {% if property.size_m2 %}<span class="meta-pill">{{ property.size_m2 }} m²</span>{% endif %}
     {% if property.plot_m2 %}<span class="meta-pill">Parcela {{ property.plot_m2 }} m²</span>{% endif %}
     {% if property.rooms %}<span class="meta-pill">{{ property.rooms }} hab</span>{% endif %}
