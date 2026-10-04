@@ -34,9 +34,9 @@
     <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
     <div class="photo-strip" aria-label="Fotos del anuncio">
       {% for img in images %}
-        <a href="{{ img }}" target="_blank" rel="noopener noreferrer">
+        <button type="button" class="photo-thumb" data-lightbox-src="{{ img }}" aria-label="Ampliar foto {{ loop.index }}">
           <img src="{{ img }}" alt="Foto {{ loop.index }}" loading="lazy">
-        </a>
+        </button>
       {% endfor %}
     </div>
   </div>
