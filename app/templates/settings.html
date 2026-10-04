@@ -3,7 +3,7 @@
 {% block content %}
 <section class="panel">
   <h1>Criterios de filtrado</h1>
-  <p class="muted">Estos valores se guardan en <code>data/config.json</code> y alimentan el motor de filtros.</p>
+  <p class="muted">Perfil actual: casas fuera de Zaragoza capital, con jardín/terreno y presupuesto acotado. Los pueblos se editan abajo.</p>
 
   {% if saved %}
     <div class="flash">Criterios guardados correctamente.</div>
@@ -11,24 +11,24 @@
 
   <form method="post" action="/settings" class="form-grid">
     <label>
-      Precio mínimo (€)
-      <input type="number" name="min_price" value="{{ config.min_price }}" required>
+      Provincia
+      <input type="text" name="province" value="{{ config.province or 'Zaragoza' }}" required>
     </label>
     <label>
       Precio máximo (€)
       <input type="number" name="max_price" value="{{ config.max_price }}" required>
     </label>
     <label>
-      m² mínimos
+      Precio mínimo (€)
+      <input type="number" name="min_price" value="{{ config.min_price }}" required>
+    </label>
+    <label>
+      m² mínimos de casa
       <input type="number" name="min_size_m2" value="{{ config.min_size_m2 }}" required>
     </label>
     <label>
-      €/m² máximo
-      <input type="number" name="max_price_per_m2" value="{{ config.max_price_per_m2 }}" required>
-    </label>
-    <label>
-      Planta mínima
-      <input type="number" name="min_floor" value="{{ config.min_floor }}" required>
+      €/m² máximo (opcional)
+      <input type="number" name="max_price_per_m2" value="{{ config.max_price_per_m2 or '' }}" placeholder="vacío = sin límite">
     </label>
     <label>
       Habitaciones mínimas
@@ -39,16 +39,28 @@
       <input type="number" name="min_baths" value="{{ config.min_baths }}" required>
     </label>
     <label class="checkbox-row">
-      <input type="checkbox" name="require_elevator" {% if config.require_elevator %}checked{% endif %}>
-      Exigir ascensor
+      <input type="checkbox" name="search_outside_city" {% if config.search_outside_city %}checked{% endif %}>
+      Buscar fuera de la ciudad
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="require_garden_or_plot" {% if config.require_garden_or_plot %}checked{% endif %}>
+      Exigir jardín o terreno
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="allow_full_renovation" {% if config.allow_full_renovation %}checked{% endif %}>
+      Aceptar reforma integral
+    </label>
+    <label class="full">
+      Pueblos donde buscar (uno por línea; también acepta comas)
+      <textarea name="towns" rows="8" placeholder="Cuarte de Huerva&#10;Utebo&#10;Zuera">{{ towns_text }}</textarea>
+    </label>
+    <label class="full">
+      Ubicaciones a excluir (separadas por coma)
+      <input type="text" name="excluded_locations" value="{{ excluded_locations_text }}">
     </label>
     <label class="full">
       Palabras prohibidas (una por línea)
       <textarea name="excluded_keywords" rows="6">{{ excluded_keywords_text }}</textarea>
-    </label>
-    <label class="full">
-      Zonas permitidas (separadas por coma)
-      <input type="text" name="locations" value="{{ locations_text }}">
     </label>
     <div class="full actions">
       <button class="button primary" type="submit">Guardar criterios</button>

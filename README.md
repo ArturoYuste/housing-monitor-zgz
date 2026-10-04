@@ -1,12 +1,21 @@
 ﻿# Housing Monitor
 
-Panel web ligero para filtrar y gestionar anuncios inmobiliarios. Primer slice: dashboard por estados, criterios editables y escaneo demo con motor de filtros (sin scrapers reales todavía).
+Panel web ligero para filtrar y gestionar casas en pueblos de Zaragoza (fuera de la ciudad). Primer slice: dashboard por estados, criterios editables y escaneo demo con motor de filtros.
+
+## Perfil de búsqueda actual
+
+- Provincia: Zaragoza, fuera de capital
+- Pueblos configurables en `/settings`
+- Máx. 180.000 €
+- Casa ≥ 100 m² con jardín/terreno
+- Reforma integral aceptada
 
 ## Stack
 
 - Python 3.12+
 - FastAPI + Jinja2 + HTMX + Tailwind (CDN)
-- Persistencia JSON en `data/`
+- Persistencia JSON local en `data/`
+- Siguiente fase de datos/hosting: Supabase + Render (sin Git sync)
 
 ## Arranque local
 
@@ -21,22 +30,13 @@ Abre [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ## Qué incluye este slice
 
-- Dashboard con pestañas: Pendientes, Favoritos, Contactados, Descartados
+- Dashboard: Pendientes, Favoritos, Contactados, Descartados
 - Cambio de estado y notas vía HTMX
-- Pantalla de criterios que escribe `data/config.json`
-- Escaneo demo sobre `data/demo_catalog.json` usando `scraper/filter_engine.py`
-
-## Estructura
-
-```text
-app/                 # FastAPI, templates, static
-scraper/             # Filter engine + demo runner (+ placeholders de portales)
-data/                # config.json, properties.json, demo_catalog.json
-requirements.txt
-```
+- Criterios (pueblos, precio, jardín/terreno, etc.) → `data/config.json`
+- Escaneo demo sobre `data/demo_catalog.json`
 
 ## Próximos pasos
 
-- Scrapers reales (Fotocasa, Idealista, etc.)
-- Persistencia remota en GitHub / Gist
-- Despliegue gratuito (Render o Koyeb)
+- Scrapers reales (Fotocasa + Idealista por alertas email)
+- Persistencia en Supabase
+- Despliegue gratis en Render

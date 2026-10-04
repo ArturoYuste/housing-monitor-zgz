@@ -1,10 +1,15 @@
 ﻿{
-  "min_price": 80000,
-  "max_price": 280000,
-  "min_size_m2": 60,
-  "max_price_per_m2": 3200,
-  "min_floor": 1,
-  "require_elevator": true,
+  "province": "Zaragoza",
+  "search_outside_city": true,
+  "property_types": ["house", "chalet"],
+  "min_price": 50000,
+  "max_price": 180000,
+  "min_size_m2": 100,
+  "max_price_per_m2": null,
+  "min_floor": null,
+  "require_elevator": false,
+  "require_garden_or_plot": true,
+  "allow_full_renovation": true,
   "min_rooms": 2,
   "min_baths": 1,
   "excluded_keywords": [
@@ -13,13 +18,31 @@
     "sin posesion",
     "sin posesión",
     "alquilado",
-    "para reformar integralmente",
-    "para reformar íntegramente"
+    "nuda propiedad",
+    "usufructo"
   ],
-  "locations": [
+  "excluded_locations": [
+    "Zaragoza capital",
     "Centro",
-    "Universidad",
     "Delicias",
-    "Actur"
+    "Actur",
+    "Universidad",
+    "Casco Histórico"
+  ],
+  "towns": [
+    "Cuarte de Huerva",
+    "María de Huerva",
+    "Cadrete",
+    "Utebo",
+    "La Puebla de Alfindén",
+    "Villanueva de Gállego",
+    "Zuera",
+    "Alagón",
+    "Pinseque",
+    "Pedrola",
+    "Épila",
+    "La Muela",
+    "Botorrita",
+    "Mozota"
   ]
 }

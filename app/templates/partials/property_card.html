@@ -4,18 +4,20 @@
     <div class="flex items-start justify-between gap-3">
       <div>
         <h2 class="text-xl font-semibold m-0" style="font-family: var(--font-display);">{{ property.title }}</h2>
-        <p class="muted m-0 mt-1">{{ property.location }} · {{ property.portal }}</p>
+        <p class="muted m-0 mt-1">{{ property.location }} · {{ property.portal }}{% if property.property_type %} · {{ property.property_type }}{% endif %}</p>
       </div>
       <strong class="text-lg whitespace-nowrap">{{ "{:,.0f}".format(property.price).replace(",", ".") }} €</strong>
     </div>
 
     <div class="property-meta">
       <span class="meta-pill">{{ property.size_m2 }} m²</span>
-      <span class="meta-pill">{{ property.price_per_m2 }} €/m²</span>
-      <span class="meta-pill">Planta {{ property.floor }}</span>
+      {% if property.plot_m2 %}<span class="meta-pill">Parcela {{ property.plot_m2 }} m²</span>{% endif %}
+      {% if property.price_per_m2 %}<span class="meta-pill">{{ property.price_per_m2 }} €/m²</span>{% endif %}
       <span class="meta-pill">{{ property.rooms }} hab</span>
       <span class="meta-pill">{{ property.baths }} baños</span>
-      <span class="meta-pill">{% if property.has_elevator %}Con ascensor{% else %}Sin ascensor{% endif %}</span>
+      {% if property.has_garden or property.has_plot %}
+        <span class="meta-pill">Jardín/terreno</span>
+      {% endif %}
     </div>
 
     <p class="m-0">{{ property.description }}</p>

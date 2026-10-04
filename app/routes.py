@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from pathlib import Path
 
 from app import storage
 from scraper.runner import run_demo_scan
@@ -34,6 +34,15 @@ def _counts(properties: list[dict[str, Any]]) -> dict[str, int]:
 def _sorted_for_status(properties: list[dict[str, Any]], status: str) -> list[dict[str, Any]]:
     filtered = [item for item in properties if (item.get("status") or "pending") == status]
     return sorted(filtered, key=lambda item: item.get("date_detected") or "", reverse=True)
+
+
+def _optional_int(value: str | None) -> int | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if text == "":
+        return None
+    return int(text)
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -63,7 +72,8 @@ async def settings_page(request: Request) -> HTMLResponse:
         {
             "config": config,
             "excluded_keywords_text": "\n".join(config.get("excluded_keywords") or []),
-            "locations_text": ", ".join(config.get("locations") or []),
+            "excluded_locations_text": ", ".join(config.get("excluded_locations") or []),
+            "towns_text": "\n".join(config.get("towns") or config.get("locations") or []),
             "saved": request.query_params.get("saved") == "1",
         },
     )
@@ -71,31 +81,43 @@ async def settings_page(request: Request) -> HTMLResponse:
 
 @router.post("/settings")
 async def save_settings(
+    province: str = Form("Zaragoza"),
     min_price: int = Form(...),
     max_price: int = Form(...),
     min_size_m2: int = Form(...),
-    max_price_per_m2: int = Form(...),
-    min_floor: int = Form(...),
+    max_price_per_m2: str = Form(""),
     min_rooms: int = Form(...),
     min_baths: int = Form(...),
-    require_elevator: str | None = Form(None),
+    require_garden_or_plot: str | None = Form(None),
+    allow_full_renovation: str | None = Form(None),
+    search_outside_city: str | None = Form(None),
     excluded_keywords: str = Form(""),
-    locations: str = Form(""),
+    excluded_locations: str = Form(""),
+    towns: str = Form(""),
 ) -> RedirectResponse:
     keywords = [line.strip() for line in excluded_keywords.splitlines() if line.strip()]
-    location_list = [part.strip() for part in locations.split(",") if part.strip()]
+    excluded_location_list = [
+        part.strip() for part in excluded_locations.replace("\n", ",").split(",") if part.strip()
+    ]
+    town_list = [line.strip() for line in towns.replace(",", "\n").splitlines() if line.strip()]
     storage.save_config(
         {
+            "province": province.strip() or "Zaragoza",
+            "search_outside_city": search_outside_city == "on",
+            "property_types": ["house", "chalet"],
             "min_price": min_price,
             "max_price": max_price,
             "min_size_m2": min_size_m2,
-            "max_price_per_m2": max_price_per_m2,
-            "min_floor": min_floor,
-            "require_elevator": require_elevator == "on",
+            "max_price_per_m2": _optional_int(max_price_per_m2),
+            "min_floor": None,
+            "require_elevator": False,
+            "require_garden_or_plot": require_garden_or_plot == "on",
+            "allow_full_renovation": allow_full_renovation == "on",
             "min_rooms": min_rooms,
             "min_baths": min_baths,
             "excluded_keywords": keywords,
-            "locations": location_list,
+            "excluded_locations": excluded_location_list,
+            "towns": town_list,
         }
     )
     return RedirectResponse(url="/settings?saved=1", status_code=303)
