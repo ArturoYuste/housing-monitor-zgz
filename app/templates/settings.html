@@ -1,0 +1,59 @@
+﻿{% extends "base.html" %}
+{% block title %}Criterios · Housing Monitor{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>Criterios de filtrado</h1>
+  <p class="muted">Estos valores se guardan en <code>data/config.json</code> y alimentan el motor de filtros.</p>
+
+  {% if saved %}
+    <div class="flash">Criterios guardados correctamente.</div>
+  {% endif %}
+
+  <form method="post" action="/settings" class="form-grid">
+    <label>
+      Precio mínimo (€)
+      <input type="number" name="min_price" value="{{ config.min_price }}" required>
+    </label>
+    <label>
+      Precio máximo (€)
+      <input type="number" name="max_price" value="{{ config.max_price }}" required>
+    </label>
+    <label>
+      m² mínimos
+      <input type="number" name="min_size_m2" value="{{ config.min_size_m2 }}" required>
+    </label>
+    <label>
+      €/m² máximo
+      <input type="number" name="max_price_per_m2" value="{{ config.max_price_per_m2 }}" required>
+    </label>
+    <label>
+      Planta mínima
+      <input type="number" name="min_floor" value="{{ config.min_floor }}" required>
+    </label>
+    <label>
+      Habitaciones mínimas
+      <input type="number" name="min_rooms" value="{{ config.min_rooms }}" required>
+    </label>
+    <label>
+      Baños mínimos
+      <input type="number" name="min_baths" value="{{ config.min_baths }}" required>
+    </label>
+    <label class="checkbox-row">
+      <input type="checkbox" name="require_elevator" {% if config.require_elevator %}checked{% endif %}>
+      Exigir ascensor
+    </label>
+    <label class="full">
+      Palabras prohibidas (una por línea)
+      <textarea name="excluded_keywords" rows="6">{{ excluded_keywords_text }}</textarea>
+    </label>
+    <label class="full">
+      Zonas permitidas (separadas por coma)
+      <input type="text" name="locations" value="{{ locations_text }}">
+    </label>
+    <div class="full actions">
+      <button class="button primary" type="submit">Guardar criterios</button>
+      <a class="button ghost" href="/">Volver al dashboard</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

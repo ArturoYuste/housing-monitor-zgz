@@ -1,0 +1,55 @@
+﻿<article class="property-card">
+  <img src="{{ property.main_image }}" alt="{{ property.title }}" loading="lazy">
+  <div>
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h2 class="text-xl font-semibold m-0" style="font-family: var(--font-display);">{{ property.title }}</h2>
+        <p class="muted m-0 mt-1">{{ property.location }} · {{ property.portal }}</p>
+      </div>
+      <strong class="text-lg whitespace-nowrap">{{ "{:,.0f}".format(property.price).replace(",", ".") }} €</strong>
+    </div>
+
+    <div class="property-meta">
+      <span class="meta-pill">{{ property.size_m2 }} m²</span>
+      <span class="meta-pill">{{ property.price_per_m2 }} €/m²</span>
+      <span class="meta-pill">Planta {{ property.floor }}</span>
+      <span class="meta-pill">{{ property.rooms }} hab</span>
+      <span class="meta-pill">{{ property.baths }} baños</span>
+      <span class="meta-pill">{% if property.has_elevator %}Con ascensor{% else %}Sin ascensor{% endif %}</span>
+    </div>
+
+    <p class="m-0">{{ property.description }}</p>
+
+    <div class="actions">
+      <a class="button ghost" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
+      {% for key, label in statuses if key != property.status %}
+      <form
+        hx-post="/properties/{{ property.id }}/status"
+        hx-target="#property-list"
+        hx-swap="innerHTML"
+      >
+        <input type="hidden" name="status" value="{{ key }}">
+        <input type="hidden" name="current_status" value="{{ active_status }}">
+        <button class="button {% if key == 'discarded' %}danger{% endif %}" type="submit">
+          Mover a {{ label }}
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+
+    <form
+      class="notes-form"
+      hx-post="/properties/{{ property.id }}/notes"
+      hx-target="#notes-{{ property.id }}"
+      hx-swap="innerHTML"
+    >
+      <input type="hidden" name="current_status" value="{{ active_status }}">
+      <label for="notes-{{ property.id }}-input"><strong>Notas</strong></label>
+      <textarea id="notes-{{ property.id }}-input" name="user_notes" rows="2" placeholder="Añade una nota personal">{{ property.user_notes }}</textarea>
+      <div class="actions">
+        <button class="button" type="submit">Guardar nota</button>
+        <div id="notes-{{ property.id }}"></div>
+      </div>
+    </form>
+  </div>
+</article>

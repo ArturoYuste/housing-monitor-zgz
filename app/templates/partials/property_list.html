@@ -1,0 +1,11 @@
+﻿{% if properties %}
+  <div class="property-grid">
+    {% for property in properties %}
+      {% include "partials/property_card.html" %}
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty">
+    No hay inmuebles en este estado. Ajusta los criterios o lanza un escaneo demo.
+  </div>
+{% endif %}

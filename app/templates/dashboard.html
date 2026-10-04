@@ -1,0 +1,36 @@
+﻿{% extends "base.html" %}
+{% block title %}Dashboard · Housing Monitor{% endblock %}
+{% block content %}
+<section class="panel">
+  <div class="hero-row">
+    <div>
+      <h1>Embudo de inmuebles</h1>
+      <p class="muted m-0 mt-2">Revisa pendientes, marca favoritos y descarta lo que no encaje.</p>
+    </div>
+    <form hx-post="/scan" hx-target="#scan-feedback" hx-swap="outerHTML">
+      <button class="button primary" type="submit">Ejecutar escaneo demo</button>
+    </form>
+  </div>
+
+  <div id="scan-feedback">
+    {% if flash %}
+      <div class="flash">{{ flash }}</div>
+    {% endif %}
+  </div>
+
+  <div id="tab-counts">
+    <div class="tabs">
+      {% for key, label in statuses %}
+        <a class="chip {% if key == active_status %}active{% endif %}" href="/?status={{ key }}">
+          {{ label }}
+          <span class="count">{{ counts.get(key, 0) }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div id="property-list">
+    {% include "partials/property_list.html" %}
+  </div>
+</section>
+{% endblock %}

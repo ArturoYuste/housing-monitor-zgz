@@ -1,0 +1,25 @@
+﻿{
+  "min_price": 80000,
+  "max_price": 280000,
+  "min_size_m2": 60,
+  "max_price_per_m2": 3200,
+  "min_floor": 1,
+  "require_elevator": true,
+  "min_rooms": 2,
+  "min_baths": 1,
+  "excluded_keywords": [
+    "okupado",
+    "subasta",
+    "sin posesion",
+    "sin posesión",
+    "alquilado",
+    "para reformar integralmente",
+    "para reformar íntegramente"
+  ],
+  "locations": [
+    "Centro",
+    "Universidad",
+    "Delicias",
+    "Actur"
+  ]
+}

@@ -1,0 +1,18 @@
+﻿<div id="scan-feedback" class="scan-banner">
+  Escaneo demo: {{ accepted_count }} pasan filtros,
+  {{ added_count }} nuevos añadidos,
+  {{ rejected_count }} descartados por criterios.
+</div>
+<div id="tab-counts" hx-swap-oob="true">
+  <div class="tabs">
+    {% for key, label in statuses %}
+      <a class="chip {% if key == active_status %}active{% endif %}" href="/?status={{ key }}">
+        {{ label }}
+        <span class="count">{{ counts.get(key, 0) }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+<div id="property-list" hx-swap-oob="true">
+  {% include "partials/property_list.html" %}
+</div>
