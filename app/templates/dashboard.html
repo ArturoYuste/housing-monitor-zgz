@@ -35,16 +35,21 @@
     </div>
   </div>
 
-  <div id="scan-feedback">
+  <div id="scan-feedback"{% if not flash %} hidden{% endif %}>
     {% if flash %}
       <div class="flash">{{ flash }}</div>
     {% endif %}
   </div>
 
-  <div id="tab-counts">
-    <div class="tabs">
+  <div id="tab-counts" class="tab-counts">
+    <div class="tabs" role="tablist" aria-label="Estado de anuncios">
       {% for key, label in statuses %}
-        <a class="chip {% if key == active_status %}active{% endif %}" href="/?status={{ key }}">
+        <a
+          class="chip {% if key == active_status %}active{% endif %}"
+          href="/?status={{ key }}"
+          role="tab"
+          aria-selected="{{ 'true' if key == active_status else 'false' }}"
+        >
           {{ label }}
           <span class="count">{{ counts.get(key, 0) }}</span>
         </a>

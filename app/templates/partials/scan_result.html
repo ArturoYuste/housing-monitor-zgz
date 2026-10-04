@@ -6,10 +6,15 @@
   {% if portal_summary %} Portales: {{ portal_summary }}.{% endif %}
   {% if errors_summary %} Errores: {{ errors_summary }}.{% endif %}
 </div>
-<div id="tab-counts" hx-swap-oob="true">
-  <div class="tabs">
+<div id="tab-counts" class="tab-counts" hx-swap-oob="true">
+  <div class="tabs" role="tablist" aria-label="Estado de anuncios">
     {% for key, label in statuses %}
-      <a class="chip {% if key == active_status %}active{% endif %}" href="/?status={{ key }}">
+      <a
+        class="chip {% if key == active_status %}active{% endif %}"
+        href="/?status={{ key }}"
+        role="tab"
+        aria-selected="{{ 'true' if key == active_status else 'false' }}"
+      >
         {{ label }}
         <span class="count">{{ counts.get(key, 0) }}</span>
       </a>

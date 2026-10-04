@@ -115,20 +115,30 @@ a {
 }
 
 .nav a.active,
-.chip.active,
 .button.primary {
   background: var(--accent);
   border-color: var(--accent);
   color: white;
 }
 
+.chip.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(47, 107, 79, 0.18);
+  transform: none;
+  font-weight: 700;
+}
+
 .chip.active .count {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.24);
   color: #fff;
 }
 
 .chip.active:hover {
   border-color: var(--accent);
+  background: #295f45;
+  transform: none;
 }
 
 .panel {
@@ -148,7 +158,7 @@ a {
   justify-content: space-between;
   gap: 1rem;
   align-items: end;
-  margin-bottom: 1.25rem;
+  margin-bottom: 0.85rem;
 }
 
 .hero-row h1,
@@ -162,8 +172,8 @@ a {
 .tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.55rem;
-  margin: 0 0 0.75rem;
+  gap: 0.45rem;
+  margin: 0;
 }
 
 .tabs a {
@@ -920,17 +930,23 @@ body.lightbox-open {
 }
 
 
-#scan-feedback:empty {
-  display: none;
+#scan-feedback[hidden] {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
 }
 
+.tab-counts,
 #tab-counts {
-  margin: 0;
+  margin: 0 0 0.35rem;
 }
 
-.scan-loader.htmx-indicator:not(.htmx-request) {
+.scan-loader.htmx-indicator {
   display: none;
-  margin: 0;
-  padding: 0;
-  border: 0;
+}
+
+.htmx-request.scan-loader.htmx-indicator,
+.htmx-request .scan-loader.htmx-indicator {
+  display: flex;
 }
