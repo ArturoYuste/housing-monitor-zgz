@@ -22,6 +22,8 @@ html,
 body {
   margin: 0;
   min-height: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -53,8 +55,10 @@ a {
 .shell {
   position: relative;
   width: min(1120px, calc(100% - 2rem));
+  max-width: 100%;
   margin: 0 auto;
   padding: 1.5rem 0 3rem;
+  overflow-x: clip;
 }
 
 .topbar {
@@ -125,6 +129,8 @@ a {
   backdrop-filter: blur(10px);
   padding: 1.25rem;
   animation: rise 0.7s ease both;
+  overflow-x: clip;
+  max-width: 100%;
 }
 
 .hero-row {
@@ -376,10 +382,38 @@ a {
 .property-card--compact {
   position: relative;
   display: grid;
-  grid-template-columns: 132px 1fr;
-  gap: 0.65rem;
-  padding: 0.55rem;
+  grid-template-columns: 1fr;
+  gap: 0.55rem;
+  padding: 0.65rem;
   align-items: stretch;
+  overflow: hidden;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.compact-main {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 0.65rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.compact-copy {
+  min-width: 0;
+}
+
+.photo-count {
+  position: absolute;
+  right: 0.4rem;
+  bottom: 0.4rem;
+  z-index: 2;
+  border-radius: 999px;
+  background: rgba(28, 36, 28, 0.72);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.15rem 0.45rem;
 }
 
 .compact-media {
@@ -472,12 +506,22 @@ a {
 }
 
 .photo-strip {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 140px;
+  display: flex;
   gap: 0.4rem;
   overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding-bottom: 0.15rem;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.photo-strip > a {
+  flex: 0 0 140px;
+  width: 140px;
+  max-width: 140px;
 }
 
 .photo-strip img {
@@ -485,6 +529,7 @@ a {
   height: 100px;
   object-fit: cover;
   border-radius: 10px;
+  display: block;
 }
 
 .desc-fold {
@@ -582,9 +627,12 @@ a {
 
 @media (max-width: 640px) {
   .property-card--compact {
-    grid-template-columns: 104px 1fr;
+    padding: 0.5rem;
+  }
+
+  .compact-main {
+    grid-template-columns: 104px minmax(0, 1fr);
     gap: 0.5rem;
-    padding: 0.45rem;
   }
 
   .property-card--compact img,
@@ -672,40 +720,12 @@ a {
   min-width: 0;
 }
 
-.photo-strip {
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-}
 
 .desc-fold summary,
 .desc-full,
 .alt-offers {
   overflow-wrap: anywhere;
   word-break: break-word;
-}
-
-.pending-details {
-  margin-top: 0.25rem;
-  border-top: 1px dashed var(--line);
-  padding-top: 0.35rem;
-}
-
-.pending-details > summary {
-  cursor: pointer;
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 0.88rem;
-  list-style: none;
-}
-
-.pending-details > summary::-webkit-details-marker { display: none; }
-
-.pending-details[open] > summary {
-  margin-bottom: 0.45rem;
-}
-
-.pending-details .photo-strip {
-  margin-bottom: 0.45rem;
 }
 
 @media (max-width: 780px) {
@@ -721,3 +741,29 @@ a {
 
 .m-0 { margin: 0; }
 .mt-2 { margin-top: 0.5rem; }
+
+
+.saved-sub {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.property-card--saved,
+.property-card--compact {
+  width: 100%;
+}
+
+.property-card--saved .actions,
+.property-card--compact .actions {
+  max-width: 100%;
+}
+
+.property-card--saved .button,
+.property-card--compact .button {
+  max-width: 100%;
+}
+
+#property-list,
+.property-grid--compact {
+  overflow-x: clip;
+}

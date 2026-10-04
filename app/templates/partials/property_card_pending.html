@@ -7,84 +7,88 @@
 {% set images = property.images if property.images else ([property.main_image] if property.main_image else []) %}
 {% set full = property.description or '' %}
 <article class="property-card property-card--compact">
-  <div class="compact-media">
-    {% if property.main_image %}
-      <img src="{{ property.main_image }}" alt="" loading="lazy">
-    {% else %}
-      <div class="thumb-fallback"></div>
-    {% endif %}
-    <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
-  </div>
-  <div class="compact-body">
-    <div class="compact-top">
-      <div>
-        <h2 class="compact-title">{{ property.title }}</h2>
-        <p class="muted m-0 compact-loc">{{ property.location }}</p>
-      </div>
-      <strong class="compact-price">
-        {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
-      </strong>
-    </div>
-    <div class="property-meta">
-      {% if property.size_m2 %}<span class="meta-pill">{{ property.size_m2 }} m²</span>{% endif %}
-      {% if property.rooms %}<span class="meta-pill">{{ property.rooms }} hab</span>{% endif %}
-      {% if property.baths %}<span class="meta-pill">{{ property.baths }} baños</span>{% endif %}
-      {% if property.has_garden or property.has_plot %}<span class="meta-pill">Jardín/terreno</span>{% endif %}
-    </div>
-    <div class="actions">
-      {% if active_status == 'pending' %}
-      <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
-        <input type="hidden" name="status" value="saved">
-        <input type="hidden" name="current_status" value="pending">
-        <button class="button primary" type="submit">Guardar</button>
-      </form>
-      <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
-        <input type="hidden" name="status" value="discarded">
-        <input type="hidden" name="current_status" value="pending">
-        <button class="button danger" type="submit">Descartar</button>
-      </form>
-      {% elif active_status == 'discarded' %}
-      <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
-        <input type="hidden" name="status" value="pending">
-        <input type="hidden" name="current_status" value="discarded">
-        <button class="button" type="submit">Volver a revisar</button>
-      </form>
+  <div class="compact-main">
+    <div class="compact-media">
+      {% if property.main_image %}
+        <img src="{{ property.main_image }}" alt="" loading="lazy">
+      {% else %}
+        <div class="thumb-fallback"></div>
       {% endif %}
-      <a class="button secondary" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
-    </div>
-
-    {% if images|length > 1 or full %}
-    <details class="pending-details">
-      <summary>Ver fotos y descripción</summary>
+      <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
       {% if images|length > 1 %}
-      <div class="photo-strip">
-        {% for img in images %}
-          <a href="{{ img }}" target="_blank" rel="noopener noreferrer">
-            <img src="{{ img }}" alt="Foto {{ loop.index }}" loading="lazy">
-          </a>
-        {% endfor %}
-      </div>
+        <span class="photo-count">{{ images|length }} fotos</span>
       {% endif %}
-      {% if full %}
-      <div class="desc-fold">
-        {% if full|length > desc_preview_len %}
-          <p class="desc-preview m-0" id="desc-short-{{ property.id }}">{{ full[:desc_preview_len] }}…</p>
-          <p class="desc-full m-0" id="desc-full-{{ property.id }}" hidden>{{ full }}</p>
-          <button class="text-toggle" type="button"
-            onclick="
-              const shortEl=document.getElementById('desc-short-{{ property.id }}');
-              const fullEl=document.getElementById('desc-full-{{ property.id }}');
-              const open = fullEl.hidden === false;
-              fullEl.hidden = open;
-              shortEl.hidden = !open;
-              this.textContent = open ? 'Leer más' : 'Leer menos';
-            ">Leer más</button>
-        {% else %}
-          <p class="desc-full m-0">{{ full }}</p>
+    </div>
+    <div class="compact-body">
+      <div class="compact-top">
+        <div class="compact-copy">
+          <h2 class="compact-title">{{ property.title }}</h2>
+          <p class="muted m-0 compact-loc">{{ property.location }}</p>
+        </div>
+        <strong class="compact-price">
+          {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
+        </strong>
+      </div>
+      <div class="property-meta">
+        {% if property.size_m2 %}<span class="meta-pill">{{ property.size_m2 }} m²</span>{% endif %}
+        {% if property.rooms %}<span class="meta-pill">{{ property.rooms }} hab</span>{% endif %}
+        {% if property.baths %}<span class="meta-pill">{{ property.baths }} baños</span>{% endif %}
+        {% if property.has_garden or property.has_plot %}<span class="meta-pill">Jardín/terreno</span>{% endif %}
+      </div>
+      <div class="actions">
+        {% if active_status == 'pending' %}
+        <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
+          <input type="hidden" name="status" value="saved">
+          <input type="hidden" name="current_status" value="pending">
+          <button class="button primary" type="submit">Guardar</button>
+        </form>
+        <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
+          <input type="hidden" name="status" value="discarded">
+          <input type="hidden" name="current_status" value="pending">
+          <button class="button danger" type="submit">Descartar</button>
+        </form>
+        {% elif active_status == 'discarded' %}
+        <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
+          <input type="hidden" name="status" value="pending">
+          <input type="hidden" name="current_status" value="discarded">
+          <button class="button" type="submit">Volver a revisar</button>
+        </form>
         {% endif %}
+        <a class="button secondary" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
       </div>
-      {% endif %}
-    </details>
+    </div>
+  </div>
+
+  {% if images %}
+  <div class="photo-strip" aria-label="Fotos del anuncio">
+    {% for img in images %}
+      <a href="{{ img }}" target="_blank" rel="noopener noreferrer">
+        <img src="{{ img }}" alt="Foto {{ loop.index }}" loading="lazy">
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if full %}
+  <div class="desc-fold">
+    {% if full|length > desc_preview_len %}
+      <p class="desc-preview m-0" id="desc-short-{{ property.id }}">{{ full[:desc_preview_len] }}…</p>
+      <p class="desc-full m-0" id="desc-full-{{ property.id }}" hidden>{{ full }}</p>
+      <button
+        class="text-toggle"
+        type="button"
+        onclick="
+          const shortEl=document.getElementById('desc-short-{{ property.id }}');
+          const fullEl=document.getElementById('desc-full-{{ property.id }}');
+          const open = fullEl.hidden === false;
+          fullEl.hidden = open;
+          shortEl.hidden = !open;
+          this.textContent = open ? 'Leer más' : 'Leer menos';
+        "
+      >Leer más</button>
+    {% else %}
+      <p class="desc-full m-0">{{ full }}</p>
     {% endif %}
   </div>
+  {% endif %}
 </article>
