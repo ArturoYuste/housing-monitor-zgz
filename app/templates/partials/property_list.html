@@ -20,6 +20,7 @@
   </div>
 {% endif %}
 
+{% if swap_tab_counts %}
 <div id="tab-counts" hx-swap-oob="true">
   <div class="tabs">
     {% for key, label in statuses %}
@@ -30,3 +31,4 @@
     {% endfor %}
   </div>
 </div>
+{% endif %}

@@ -51,7 +51,12 @@ def _load_properties() -> list[dict[str, Any]]:
     return properties
 
 
-def _list_context(active: str, properties: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+def _list_context(
+    active: str,
+    properties: list[dict[str, Any]] | None = None,
+    *,
+    swap_tab_counts: bool = False,
+) -> dict[str, Any]:
     props = properties if properties is not None else _load_properties()
     return {
         "active_status": active,
@@ -59,6 +64,7 @@ def _list_context(active: str, properties: list[dict[str, Any]] | None = None) -
         "counts": _counts(props),
         "properties": _sorted_for_status(props, active),
         "desc_preview_len": DESC_PREVIEW_LEN,
+        "swap_tab_counts": swap_tab_counts,
     }
 
 
@@ -159,7 +165,10 @@ async def update_status(
     if status not in valid:
         status = "pending"
     storage.update_property(property_id, status=status)
-    ctx = _list_context(current_status if current_status in valid else "pending")
+    ctx = _list_context(
+        current_status if current_status in valid else "pending",
+        swap_tab_counts=True,
+    )
     return templates.TemplateResponse(request, "partials/property_list.html", ctx)
 
 
@@ -178,7 +187,10 @@ async def update_management(
         price_notes=price_notes.strip(),
         negotiation_notes=negotiation_notes.strip(),
     )
-    ctx = _list_context(current_status if current_status in {k for k, _ in STATUSES} else "saved")
+    ctx = _list_context(
+        current_status if current_status in {k for k, _ in STATUSES} else "saved",
+        swap_tab_counts=True,
+    )
     return templates.TemplateResponse(request, "partials/property_list.html", ctx)
 
 
