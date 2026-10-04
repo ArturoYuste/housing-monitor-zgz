@@ -78,12 +78,21 @@
         const trigger = event.target.closest("[data-lightbox-src]");
         if (trigger) {
           event.preventDefault();
-          const strip = trigger.closest(".photo-strip");
+          const card = trigger.closest(".property-card");
+          const strip = card ? card.querySelector(".photo-strip") : null;
           const nodes = strip
             ? Array.from(strip.querySelectorAll("[data-lightbox-src]"))
             : [trigger];
-          const list = nodes.map(function (node) { return node.getAttribute("data-lightbox-src"); });
-          const start = Math.max(0, nodes.indexOf(trigger));
+          let list = nodes.map(function (node) { return node.getAttribute("data-lightbox-src"); });
+          let start = Math.max(0, nodes.indexOf(trigger));
+          if (!nodes.includes(trigger)) {
+            const src = trigger.getAttribute("data-lightbox-src");
+            start = Math.max(0, list.indexOf(src));
+            if (start < 0) {
+              list = [src].concat(list);
+              start = 0;
+            }
+          }
           openLightbox(list, start);
           return;
         }

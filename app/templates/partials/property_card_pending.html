@@ -10,7 +10,9 @@
   <div class="compact-main">
     <div class="compact-media">
       {% if property.main_image %}
-        <img src="{{ property.main_image }}" alt="" loading="lazy">
+        <button type="button" class="photo-thumb photo-thumb--cover" data-lightbox-src="{{ property.main_image }}" aria-label="Ampliar foto principal">
+          <img src="{{ property.main_image }}" alt="" loading="lazy">
+        </button>
       {% else %}
         <div class="thumb-fallback"></div>
       {% endif %}
