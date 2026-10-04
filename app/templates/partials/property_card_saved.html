@@ -1,8 +1,17 @@
-﻿<article class="property-card property-card--saved">
+﻿{% set portal_label = {
+  'fotocasa': 'Fotocasa',
+  'habitaclia': 'Habitaclia',
+  'pisos.com': 'Pisos.com',
+  'idealista': 'Idealista'
+}.get(property.portal, property.portal) %}
+<article class="property-card property-card--saved">
   <div class="saved-head">
     <div>
-      <h2 class="compact-title">{{ property.title }}</h2>
-      <p class="muted m-0">{{ property.location }} · {{ property.portal }} ·
+      <div class="title-row">
+        <h2 class="compact-title">{{ property.title }}</h2>
+        <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
+      </div>
+      <p class="muted m-0">{{ property.location }} ·
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
       </p>
     </div>

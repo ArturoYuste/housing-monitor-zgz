@@ -448,3 +448,63 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+
+.property-card--compact {
+  position: relative;
+}
+
+.portal-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: #e8f0ea;
+  color: #244c36;
+  border: 1px solid rgba(36, 76, 54, 0.15);
+  white-space: nowrap;
+}
+
+.property-card--compact > .portal-badge {
+  position: absolute;
+  top: 0.85rem;
+  left: 0.85rem;
+  z-index: 2;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 6px 16px rgba(28, 36, 28, 0.12);
+}
+
+.portal-badge--fotocasa {
+  color: #0b5cab;
+  border-color: rgba(11, 92, 171, 0.25);
+  background: #eaf3fc;
+}
+
+.portal-badge--habitaclia {
+  color: #8a4b00;
+  border-color: rgba(138, 75, 0, 0.25);
+  background: #fff3e6;
+}
+
+.portal-badge--pisos-com {
+  color: #6b1f6b;
+  border-color: rgba(107, 31, 107, 0.25);
+  background: #f8eaf8;
+}
+
+.portal-badge--idealista {
+  color: #0f6b4d;
+  border-color: rgba(15, 107, 77, 0.25);
+  background: #e8f7f1;
+}
+
+.title-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}

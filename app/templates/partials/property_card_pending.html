@@ -1,14 +1,21 @@
-﻿<article class="property-card property-card--compact">
+﻿{% set portal_label = {
+  'fotocasa': 'Fotocasa',
+  'habitaclia': 'Habitaclia',
+  'pisos.com': 'Pisos.com',
+  'idealista': 'Idealista'
+}.get(property.portal, property.portal) %}
+<article class="property-card property-card--compact">
   {% if property.main_image %}
     <img src="{{ property.main_image }}" alt="" loading="lazy">
   {% else %}
     <div class="thumb-fallback"></div>
   {% endif %}
+  <span class="portal-badge portal-badge--{{ property.portal|replace('.', '-') }}">{{ portal_label }}</span>
   <div class="compact-body">
     <div class="compact-top">
       <div>
         <h2 class="compact-title">{{ property.title }}</h2>
-        <p class="muted m-0">{{ property.location }} · {{ property.portal }}</p>
+        <p class="muted m-0">{{ property.location }}</p>
       </div>
       <strong class="compact-price">
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
