@@ -15,9 +15,24 @@
         {% endif %}
       </p>
     </div>
-    <form hx-post="/scan" hx-target="#scan-feedback" hx-swap="outerHTML">
+    <form
+      class="scan-form"
+      hx-post="/scan"
+      hx-target="#scan-feedback"
+      hx-swap="outerHTML"
+      hx-disabled-elt="button"
+      hx-indicator="#scan-loader"
+    >
       <button class="button primary" type="submit">Buscar nuevos</button>
     </form>
+  </div>
+
+  <div id="scan-loader" class="scan-loader htmx-indicator" aria-live="polite">
+    <div class="scan-loader__spinner" aria-hidden="true"></div>
+    <div>
+      <strong>Buscando anuncios…</strong>
+      <p class="muted m-0">Consultando Fotocasa, Habitaclia y Pisos.com. Puede tardar unos segundos.</p>
+    </div>
   </div>
 
   <div id="scan-feedback">

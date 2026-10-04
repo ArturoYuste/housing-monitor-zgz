@@ -85,8 +85,16 @@ def find_property(property_id: str) -> dict[str, Any] | None:
 
 
 def update_property(property_id: str, **changes: Any) -> dict[str, Any] | None:
+    """Update one property in the active store (Supabase when enabled)."""
     with _lock:
-        properties = _read_json(PROPERTIES_PATH)
+        if supabase_enabled():
+            try:
+                properties = SupabaseStore().load_properties()
+            except Exception:
+                properties = _read_json(PROPERTIES_PATH)
+        else:
+            properties = _read_json(PROPERTIES_PATH)
+
         updated: dict[str, Any] | None = None
         for item in properties:
             if item.get("id") == property_id:
@@ -95,12 +103,15 @@ def update_property(property_id: str, **changes: Any) -> dict[str, Any] | None:
                 break
         if updated is None:
             return None
+
+        # Always keep local JSON as fallback mirror.
         _write_json(PROPERTIES_PATH, properties)
         snapshot = list(properties)
-    if updated is not None and supabase_enabled():
+
+    if supabase_enabled():
         try:
             SupabaseStore().save_properties(snapshot)
         except Exception:
+            # Still return updated local view; next load may fall back.
             pass
     return updated
-
