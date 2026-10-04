@@ -10,15 +10,22 @@ from fastapi.staticfiles import StaticFiles
 
 from app.routes import router
 from app.scheduler import start_scheduler
+from app.bootstrap import ensure_seed_data
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    ensure_seed_data()
     start_scheduler()
     yield
 
 
-app = FastAPI(title="Housing Monitor", version="0.2.0", lifespan=lifespan)
+app = FastAPI(title="Housing Monitor", version="0.3.0", lifespan=lifespan)
 static_dir = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 app.include_router(router)
+
+
+@app.get("/healthz")
+async def healthz() -> dict[str, str]:
+    return {"status": "ok"}

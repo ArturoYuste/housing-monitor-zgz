@@ -1,0 +1,22 @@
+﻿services:
+  - type: web
+    name: housing-monitor
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+      - key: SCAN_INTERVAL_MINUTES
+        value: "30"
+      - key: IMAP_ENABLED
+        value: "false"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: SUPABASE_PROPERTIES_TABLE
+        value: properties
+      - key: SUPABASE_CONFIG_TABLE
+        value: app_config

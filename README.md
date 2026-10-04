@@ -66,3 +66,12 @@ export SCAN_INTERVAL_MINUTES=30
 export SUPABASE_URL=...
 export SUPABASE_SERVICE_KEY=...
 ```
+
+## Despliegue (Render + Supabase)
+
+1. Ejecuta `supabase/schema.sql` en tu proyecto Supabase.
+2. En Render, crea un Web Service / Blueprint con este repo (`render.yaml`).
+3. Configura `SUPABASE_URL` y `SUPABASE_SERVICE_KEY`.
+4. Abre la URL pública de Render (`/healthz` para healthcheck).
+
+Guía detallada en el Context del proyecto: `docs/deploy-render-supabase.md`.
