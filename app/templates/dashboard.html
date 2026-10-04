@@ -1,15 +1,22 @@
 ﻿{% extends "base.html" %}
-{% block title %}Dashboard · Housing Monitor{% endblock %}
+{% block title %}Por revisar · Housing Monitor{% endblock %}
 {% block content %}
 <section class="panel">
   <div class="hero-row">
     <div>
-      <h1>Embudo de inmuebles</h1>
-      <p class="muted m-0 mt-2">Revisa pendientes, marca favoritos y descarta lo que no encaje.</p>
+      <h1>{% if active_status == 'pending' %}Por revisar{% elif active_status == 'saved' %}Guardados{% else %}Descartados{% endif %}</h1>
+      <p class="muted m-0 mt-2">
+        {% if active_status == 'pending' %}
+          Revisa anuncios nuevos: guarda los interesantes o descártalos.
+        {% elif active_status == 'saved' %}
+          Gestiona defectos, precio y negociación. Amplía fotos y descripción.
+        {% else %}
+          Histórico de anuncios descartados.
+        {% endif %}
+      </p>
     </div>
-    <form hx-post="/scan" hx-target="#scan-feedback" hx-swap="outerHTML" hx-indicator="#scan-indicator">
-      <button class="button primary" type="submit">Ejecutar escaneo (portales)</button>
-      <span id="scan-indicator" class="muted" style="margin-left:0.5rem;display:none;">Escaneando pueblos…</span>
+    <form hx-post="/scan" hx-target="#scan-feedback" hx-swap="outerHTML">
+      <button class="button primary" type="submit">Buscar nuevos</button>
     </form>
   </div>
 

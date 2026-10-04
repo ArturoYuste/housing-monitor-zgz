@@ -20,6 +20,11 @@ def normalize_listing(raw: dict[str, Any], portal: str) -> dict[str, Any]:
     if price_per_m2 is None and price and size:
         price_per_m2 = round(float(price) / float(size))
 
+    images = [str(x) for x in (raw.get("images") or []) if x]
+    main_image = raw.get("main_image") or (images[0] if images else "")
+    if main_image and main_image not in images:
+        images = [main_image] + images
+
     listing_id = raw.get("id") or f"{portal}-{raw.get('external_id') or raw.get('url')}"
     return {
         "id": str(listing_id),
@@ -38,9 +43,13 @@ def normalize_listing(raw: dict[str, Any], portal: str) -> dict[str, Any]:
         "floor": raw.get("floor"),
         "location": raw.get("location") or "",
         "url": raw.get("url") or "",
-        "main_image": raw.get("main_image") or "",
+        "main_image": main_image or "",
+        "images": images,
         "description": raw.get("description") or "",
         "date_detected": raw.get("date_detected"),
         "status": raw.get("status") or "pending",
-        "user_notes": raw.get("user_notes") or "",
+        "defects": raw.get("defects") or "",
+        "price_notes": raw.get("price_notes") or "",
+        "negotiation_notes": raw.get("negotiation_notes") or "",
+        "alt_offers": raw.get("alt_offers") or [],
     }

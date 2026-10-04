@@ -51,8 +51,7 @@
   "enabled_portals": [
     "fotocasa",
     "habitaclia",
-    "pisos.com",
-    "idealista"
+    "pisos.com"
   ],
   "scan_max_towns": null
 }

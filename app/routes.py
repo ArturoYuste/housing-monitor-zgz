@@ -10,17 +10,18 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import storage
-from scraper.runner import run_portal_scan
+from scraper.runner import migrate_property_statuses, run_portal_scan
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
 
 STATUSES = [
-    ("pending", "Pendientes"),
-    ("favorite", "Favoritos"),
-    ("contacted", "Contactados"),
+    ("pending", "Por revisar"),
+    ("saved", "Guardados"),
     ("discarded", "Descartados"),
 ]
+
+DESC_PREVIEW_LEN = 220
 
 
 def _counts(properties: list[dict[str, Any]]) -> dict[str, int]:
@@ -45,27 +46,41 @@ def _optional_int(value: str | None) -> int | None:
     return int(text)
 
 
+def _load_properties() -> list[dict[str, Any]]:
+    properties = migrate_property_statuses(storage.load_properties())
+    return properties
+
+
+def _list_context(active: str, properties: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    props = properties if properties is not None else _load_properties()
+    return {
+        "active_status": active,
+        "statuses": STATUSES,
+        "counts": _counts(props),
+        "properties": _sorted_for_status(props, active),
+        "desc_preview_len": DESC_PREVIEW_LEN,
+    }
+
+
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, status: str = "pending") -> HTMLResponse:
     valid = {key for key, _ in STATUSES}
     active = status if status in valid else "pending"
-    properties = storage.load_properties()
-    return templates.TemplateResponse(
-        request,
-        "dashboard.html",
-        {
-            "active_status": active,
-            "statuses": STATUSES,
-            "counts": _counts(properties),
-            "properties": _sorted_for_status(properties, active),
-            "flash": request.query_params.get("flash"),
-        },
-    )
+    properties = _load_properties()
+    # Persist migrated statuses if needed.
+    if any((p.get("status") in {"favorite", "contacted"}) for p in storage.load_properties()):
+        storage.save_properties(properties)
+    ctx = _list_context(active, properties)
+    ctx["flash"] = request.query_params.get("flash")
+    return templates.TemplateResponse(request, "dashboard.html", ctx)
 
 
 @router.get("/settings", response_class=HTMLResponse)
 async def settings_page(request: Request) -> HTMLResponse:
     config = storage.load_config()
+    portals = [p for p in (config.get("enabled_portals") or []) if p != "idealista"]
+    if not portals:
+        portals = ["fotocasa", "habitaclia", "pisos.com"]
     return templates.TemplateResponse(
         request,
         "settings.html",
@@ -74,7 +89,7 @@ async def settings_page(request: Request) -> HTMLResponse:
             "excluded_keywords_text": "\n".join(config.get("excluded_keywords") or []),
             "excluded_locations_text": ", ".join(config.get("excluded_locations") or []),
             "towns_text": "\n".join(config.get("towns") or config.get("locations") or []),
-            "enabled_portals_text": ", ".join(config.get("enabled_portals") or []),
+            "enabled_portals_text": ", ".join(portals),
             "saved": request.query_params.get("saved") == "1",
         },
     )
@@ -95,7 +110,7 @@ async def save_settings(
     excluded_keywords: str = Form(""),
     excluded_locations: str = Form(""),
     towns: str = Form(""),
-    enabled_portals: str = Form("fotocasa, habitaclia, pisos.com, idealista"),
+    enabled_portals: str = Form("fotocasa, habitaclia, pisos.com"),
     scan_max_towns: str = Form(""),
 ) -> RedirectResponse:
     keywords = [line.strip() for line in excluded_keywords.splitlines() if line.strip()]
@@ -103,6 +118,11 @@ async def save_settings(
         part.strip() for part in excluded_locations.replace("\n", ",").split(",") if part.strip()
     ]
     town_list = [line.strip() for line in towns.replace(",", "\n").splitlines() if line.strip()]
+    portals = [
+        part.strip()
+        for part in enabled_portals.split(",")
+        if part.strip() and part.strip() != "idealista"
+    ]
     storage.save_config(
         {
             "province": province.strip() or "Zaragoza",
@@ -121,7 +141,7 @@ async def save_settings(
             "excluded_keywords": keywords,
             "excluded_locations": excluded_location_list,
             "towns": town_list,
-            "enabled_portals": [part.strip() for part in enabled_portals.split(",") if part.strip()],
+            "enabled_portals": portals or ["fotocasa", "habitaclia", "pisos.com"],
             "scan_max_towns": _optional_int(scan_max_towns),
         }
     )
@@ -139,63 +159,54 @@ async def update_status(
     if status not in valid:
         status = "pending"
     storage.update_property(property_id, status=status)
-    properties = storage.load_properties()
-    return templates.TemplateResponse(
-        request,
-        "partials/property_list.html",
-        {
-            "active_status": current_status if current_status in valid else "pending",
-            "properties": _sorted_for_status(properties, current_status),
-            "statuses": STATUSES,
-        },
-    )
+    ctx = _list_context(current_status if current_status in valid else "pending")
+    return templates.TemplateResponse(request, "partials/property_list.html", ctx)
 
 
-@router.post("/properties/{property_id}/notes", response_class=HTMLResponse)
-async def update_notes(
+@router.post("/properties/{property_id}/manage", response_class=HTMLResponse)
+async def update_management(
     request: Request,
     property_id: str,
-    user_notes: str = Form(""),
-    current_status: str = Form("pending"),
+    defects: str = Form(""),
+    price_notes: str = Form(""),
+    negotiation_notes: str = Form(""),
+    current_status: str = Form("saved"),
 ) -> HTMLResponse:
-    updated = storage.update_property(property_id, user_notes=user_notes.strip())
-    return templates.TemplateResponse(
-        request,
-        "partials/notes_saved.html",
-        {
-            "property": updated,
-            "active_status": current_status,
-        },
+    storage.update_property(
+        property_id,
+        defects=defects.strip(),
+        price_notes=price_notes.strip(),
+        negotiation_notes=negotiation_notes.strip(),
     )
+    ctx = _list_context(current_status if current_status in {k for k, _ in STATUSES} else "saved")
+    return templates.TemplateResponse(request, "partials/property_list.html", ctx)
 
 
 @router.post("/scan", response_class=HTMLResponse)
 async def run_scan(request: Request) -> HTMLResponse:
     result = run_portal_scan(
-        existing=storage.load_properties(),
+        existing=_load_properties(),
         config=storage.load_config(),
-        catalog_fallback=storage.load_demo_catalog(),
+        catalog_fallback=None,
     )
     storage.save_properties(result["properties"])
-    properties = result["properties"]
+    properties = migrate_property_statuses(result["properties"])
     by_portal = result.get("by_portal_counts") or {}
     errors = result.get("errors") or {}
     portal_summary = ", ".join(f"{name}={count}" for name, count in by_portal.items())
     errors_summary = "; ".join(f"{name}: {msg}" for name, msg in errors.items())
+    ctx = _list_context("pending", properties)
     return templates.TemplateResponse(
         request,
         "partials/scan_result.html",
         {
+            **ctx,
             "added_count": result["added_count"],
             "rejected_count": result["rejected_count"],
             "accepted_count": result["accepted_count"],
-            "source": result.get("source", "demo_catalog"),
+            "source": result.get("source", "portals"),
             "imap_enabled": result.get("imap_enabled", False),
             "portal_summary": portal_summary,
             "errors_summary": errors_summary,
-            "active_status": "pending",
-            "statuses": STATUSES,
-            "counts": _counts(properties),
-            "properties": _sorted_for_status(properties, "pending"),
         },
     )

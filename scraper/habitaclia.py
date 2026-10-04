@@ -40,10 +40,12 @@ def _parse_card(article, town: str) -> dict[str, Any] | None:
     rooms_match = re.search(r"(\d+)\s*hab", text, re.I)
     baths_match = re.search(r"(\d+)\s*bañ", text, re.I)
     title = article.get("aria-label") or text[:80]
-    image = ""
-    img = article.select_one("img[src]")
-    if img and img.get("src"):
-        image = img["src"]
+    images: list[str] = []
+    for img in article.select("img[src]"):
+        src = img.get("src") or ""
+        if src and src not in images and "data:" not in src:
+            images.append(src)
+    image = images[0] if images else ""
 
     external_id = link.rstrip("/").split("/")[-2] if "/d" in link else link
     description = text
@@ -66,6 +68,7 @@ def _parse_card(article, town: str) -> dict[str, Any] | None:
             "location": town,
             "url": urljoin(BASE, link),
             "main_image": image,
+            "images": images,
             "description": description,
         },
         portal="habitaclia",

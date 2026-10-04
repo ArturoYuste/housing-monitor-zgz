@@ -61,11 +61,13 @@ def _map_item(item: dict[str, Any], town: str) -> dict[str, Any] | None:
     if isinstance(detail, dict):
         path = detail.get("es-ES") or next(iter(detail.values()), "") or ""
     url = f"https://www.fotocasa.es{path}" if path.startswith("/") else path
-    image = ""
+    images: list[str] = []
     for media in item.get("multimedia") or []:
         if media.get("type") == "image" and media.get("src"):
-            image = media["src"]
-            break
+            src = str(media["src"])
+            if src not in images:
+                images.append(src)
+    image = images[0] if images else ""
 
     price = item.get("rawPrice")
     if price is None:
@@ -103,6 +105,7 @@ def _map_item(item: dict[str, Any], town: str) -> dict[str, Any] | None:
             "location": location,
             "url": url,
             "main_image": image,
+            "images": images,
             "description": description,
         },
         portal="fotocasa",

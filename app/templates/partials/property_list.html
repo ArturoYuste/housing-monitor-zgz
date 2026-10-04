@@ -1,11 +1,21 @@
 ﻿{% if properties %}
-  <div class="property-grid">
+  <div class="property-grid {% if active_status == 'pending' %}property-grid--compact{% endif %}">
     {% for property in properties %}
-      {% include "partials/property_card.html" %}
+      {% if active_status == 'saved' %}
+        {% include "partials/property_card_saved.html" %}
+      {% else %}
+        {% include "partials/property_card_pending.html" %}
+      {% endif %}
     {% endfor %}
   </div>
 {% else %}
   <div class="empty">
-    No hay inmuebles en este estado. Ajusta los criterios o lanza un escaneo demo.
+    {% if active_status == 'pending' %}
+      No hay anuncios pendientes. Pulsa “Buscar nuevos” para escanear portales.
+    {% elif active_status == 'saved' %}
+      Aún no hay guardados. Guarda anuncios desde “Por revisar”.
+    {% else %}
+      No hay descartados.
+    {% endif %}
   </div>
 {% endif %}

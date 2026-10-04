@@ -44,10 +44,12 @@ def _parse_card(card, town: str) -> dict[str, Any] | None:
     size_match = re.search(r"(\d+)\s*m²", text)
     rooms_match = re.search(r"(\d+)\s*hab", text, re.I)
     baths_match = re.search(r"(\d+)\s*baño", text, re.I)
-    image = ""
-    img = card.select_one("img[src]")
-    if img and img.get("src"):
-        image = img["src"]
+    images: list[str] = []
+    for img in card.select("img[src]"):
+        src = img.get("src") or ""
+        if src and src not in images and "data:" not in src:
+            images.append(src)
+    image = images[0] if images else ""
 
     external_id = href.rstrip("/").split("-")[-1] if href else title
     blob = f"{title} {description}".lower()
@@ -69,6 +71,7 @@ def _parse_card(card, town: str) -> dict[str, Any] | None:
             "location": town,
             "url": urljoin(BASE, href),
             "main_image": image,
+            "images": images,
             "description": description,
         },
         portal="pisos.com",

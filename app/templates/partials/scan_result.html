@@ -1,10 +1,9 @@
 ﻿<div id="scan-feedback" class="scan-banner">
   Escaneo ({{ source }}): {{ accepted_count }} pasan filtros,
-  {{ added_count }} nuevos añadidos,
-  {{ rejected_count }} descartados.
+  {{ added_count }} nuevos en “Por revisar”,
+  {{ rejected_count }} descartados por criterios.
   {% if portal_summary %} Portales: {{ portal_summary }}.{% endif %}
   {% if errors_summary %} Errores: {{ errors_summary }}.{% endif %}
-  {% if imap_enabled %}IMAP activo.{% else %}Idealista email pendiente.{% endif %}
 </div>
 <div id="tab-counts" hx-swap-oob="true">
   <div class="tabs">

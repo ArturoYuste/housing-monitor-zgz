@@ -1,0 +1,85 @@
+﻿<article class="property-card property-card--saved">
+  <div class="saved-head">
+    <div>
+      <h2 class="compact-title">{{ property.title }}</h2>
+      <p class="muted m-0">{{ property.location }} · {{ property.portal }} ·
+        {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
+      </p>
+    </div>
+    <div class="actions">
+      <a class="button ghost" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
+      <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
+        <input type="hidden" name="status" value="discarded">
+        <input type="hidden" name="current_status" value="saved">
+        <button class="button danger" type="submit">Descartar</button>
+      </form>
+    </div>
+  </div>
+
+  {% set images = property.images if property.images else ([property.main_image] if property.main_image else []) %}
+  {% if images %}
+  <div class="photo-strip">
+    {% for img in images %}
+      <a href="{{ img }}" target="_blank" rel="noopener noreferrer">
+        <img src="{{ img }}" alt="Foto {{ loop.index }}" loading="lazy">
+      </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="property-meta">
+    {% if property.size_m2 %}<span class="meta-pill">{{ property.size_m2 }} m²</span>{% endif %}
+    {% if property.plot_m2 %}<span class="meta-pill">Parcela {{ property.plot_m2 }} m²</span>{% endif %}
+    {% if property.rooms %}<span class="meta-pill">{{ property.rooms }} hab</span>{% endif %}
+    {% if property.baths %}<span class="meta-pill">{{ property.baths }} baños</span>{% endif %}
+    {% if property.has_garden or property.has_plot %}<span class="meta-pill">Jardín/terreno</span>{% endif %}
+  </div>
+
+  {% set full = property.description or '' %}
+  {% if full %}
+  <details class="desc-fold" {% if full|length <= desc_preview_len %}open{% endif %}>
+    <summary>
+      {% if full|length > desc_preview_len %}
+        {{ full[:desc_preview_len] }}… <span class="read-more">Leer más</span>
+      {% else %}
+        {{ full }}
+      {% endif %}
+    </summary>
+    {% if full|length > desc_preview_len %}
+      <p class="desc-full">{{ full }}</p>
+    {% endif %}
+  </details>
+  {% endif %}
+
+  {% if property.alt_offers %}
+    <p class="muted alt-offers">Otras ofertas detectadas (más caras / otros portales):
+      {% for alt in property.alt_offers[:4] %}
+        <a href="{{ alt.url }}" target="_blank" rel="noopener noreferrer">{{ alt.portal }}{% if alt.price %} {{ alt.price }}€{% endif %}</a>{% if not loop.last %}, {% endif %}
+      {% endfor %}
+    </p>
+  {% endif %}
+
+  <form
+    class="manage-form"
+    hx-post="/properties/{{ property.id }}/manage"
+    hx-target="#property-list"
+    hx-swap="innerHTML"
+  >
+    <input type="hidden" name="current_status" value="saved">
+    <label>
+      Defectos / estado
+      <textarea name="defects" rows="2" placeholder="Humedades, tejado, instalación eléctrica…">{{ property.defects }}</textarea>
+    </label>
+    <label>
+      Precio
+      <textarea name="price_notes" rows="2" placeholder="¿Encaja? ¿Sobreprecio? Referencias…">{{ property.price_notes }}</textarea>
+    </label>
+    <label>
+      Negociación
+      <textarea name="negotiation_notes" rows="2" placeholder="Contactos, ofertas hechas, respuesta…">{{ property.negotiation_notes }}</textarea>
+    </label>
+    <div class="actions">
+      <button class="button primary" type="submit">Guardar gestión</button>
+    </div>
+  </form>
+</article>
