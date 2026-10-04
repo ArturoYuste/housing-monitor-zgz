@@ -971,3 +971,9 @@ body.lightbox-open {
   font-family: var(--font-display);
   font-size: 1.35rem;
 }
+
+
+.sync-meta {
+  margin-top: 0.45rem;
+  font-size: 0.9rem;
+}

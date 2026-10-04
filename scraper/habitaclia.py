@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 from urllib.parse import urljoin
 
@@ -92,18 +93,32 @@ def fetch_listings(config: dict[str, Any] | None = None) -> list[dict[str, Any]]
     """Fetch Habitaclia house listings for configured towns."""
     config = config or {}
     towns = config.get("towns") or config.get("locations") or []
-    collected: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for town in towns:
+    def _fetch_town(town: str) -> list[dict[str, Any]]:
         try:
             html = fetch_html(build_search_url(str(town)))
         except Exception:
-            continue
+            return []
         soup = BeautifulSoup(html, "lxml")
+        found: list[dict[str, Any]] = []
         for article in soup.select("article"):
             mapped = _parse_card(article, str(town))
-            if not mapped or mapped["id"] in seen:
-                continue
-            seen.add(mapped["id"])
-            collected.append(mapped)
+            if mapped:
+                found.append(mapped)
+        return found
+
+    collected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    if towns:
+        with ThreadPoolExecutor(max_workers=min(6, len(towns))) as pool:
+            futures = [pool.submit(_fetch_town, str(town)) for town in towns]
+            for future in as_completed(futures):
+                try:
+                    batch = future.result()
+                except Exception:
+                    continue
+                for mapped in batch:
+                    if mapped["id"] in seen:
+                        continue
+                    seen.add(mapped["id"])
+                    collected.append(mapped)
     return collected

@@ -199,9 +199,7 @@ def fetch_listings(config: dict[str, Any] | None = None) -> list[dict[str, Any]]
     """Fetch Pisos.com house/chalet listings for configured towns."""
     config = config or {}
     towns = config.get("towns") or config.get("locations") or []
-    collected: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for town in towns:
+    def _fetch_town(town: str) -> list[dict[str, Any]]:
         urls = [
             build_search_url(str(town)),
             f"{BASE}/venta/casas-{slugify_town(str(town)).replace('-', '_')}/",
@@ -214,28 +212,51 @@ def fetch_listings(config: dict[str, Any] | None = None) -> list[dict[str, Any]]
             except Exception:
                 continue
         if not html:
-            continue
+            return []
         soup = BeautifulSoup(html, "lxml")
+        found: list[dict[str, Any]] = []
         for card in soup.select("div.ad-preview"):
             mapped = _parse_card(card, str(town))
-            if not mapped or mapped["id"] in seen:
-                continue
-            seen.add(mapped["id"])
-            collected.append(mapped)
+            if mapped:
+                found.append(mapped)
+        return found
 
-    # Detail pages expose the full gallery; enrich listings with few/no photos.
-    needs_enrichment = [item for item in collected if len(item.get("images") or []) < 3]
-    if needs_enrichment:
-        max_workers = min(6, len(needs_enrichment))
-        enriched_by_id: dict[str, dict[str, Any]] = {}
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            futures = {pool.submit(_enrich_images, dict(item)): item["id"] for item in needs_enrichment}
+    collected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    if towns:
+        with ThreadPoolExecutor(max_workers=min(6, len(towns))) as pool:
+            futures = [pool.submit(_fetch_town, str(town)) for town in towns]
             for future in as_completed(futures):
-                listing_id = futures[future]
                 try:
-                    enriched_by_id[listing_id] = future.result()
+                    batch = future.result()
                 except Exception:
                     continue
-        collected = [enriched_by_id.get(item["id"], item) for item in collected]
+                for mapped in batch:
+                    if mapped["id"] in seen:
+                        continue
+                    seen.add(mapped["id"])
+                    collected.append(mapped)
 
     return collected
+
+
+def enrich_missing_images(
+    listings: list[dict[str, Any]],
+    *,
+    limit: int = 24,
+    min_images: int = 1,
+) -> list[dict[str, Any]]:
+    """Fetch detail pages only for listings still missing photos (keeps scans fast)."""
+    needs = [item for item in listings if len(item.get("images") or []) < min_images][: max(0, limit)]
+    if not needs:
+        return listings
+    enriched_by_id: dict[str, dict[str, Any]] = {}
+    with ThreadPoolExecutor(max_workers=min(6, len(needs))) as pool:
+        futures = {pool.submit(_enrich_images, dict(item)): item["id"] for item in needs}
+        for future in as_completed(futures):
+            listing_id = futures[future]
+            try:
+                enriched_by_id[listing_id] = future.result()
+            except Exception:
+                continue
+    return [enriched_by_id.get(item["id"], item) for item in listings]

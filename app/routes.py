@@ -26,6 +26,23 @@ STATUSES = [
 DESC_PREVIEW_LEN = 220
 
 
+def _format_last_sync(value: str | None) -> str:
+    if not value:
+        return "Aún no actualizado"
+    text = str(value).strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        from datetime import datetime, timezone
+        when = datetime.fromisoformat(text)
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        local = when.astimezone()
+        return local.strftime("Última actualización: %d/%m/%Y %H:%M")
+    except Exception:
+        return f"Última actualización: {value}"
+
+
 def _counts(properties: list[dict[str, Any]]) -> dict[str, int]:
     counts = {key: 0 for key, _ in STATUSES}
     for item in properties:
@@ -92,6 +109,8 @@ async def dashboard(request: Request, status: str = "pending") -> HTMLResponse:
         storage.save_properties(properties)
     ctx = _list_context(active, properties)
     ctx["flash"] = request.query_params.get("flash")
+    config = storage.load_config()
+    ctx["last_sync_label"] = _format_last_sync(config.get("last_sync_at"))
     return templates.TemplateResponse(request, "dashboard.html", ctx)
 
 
@@ -210,12 +229,23 @@ async def update_management(
 
 @router.post("/scan", response_class=HTMLResponse)
 async def run_scan(request: Request) -> HTMLResponse:
+    config = storage.load_config()
     result = run_portal_scan(
         existing=_load_properties(),
-        config=storage.load_config(),
+        config=config,
         catalog_fallback=None,
     )
     storage.save_properties(result["properties"])
+    synced_at = result.get("synced_at")
+    if synced_at:
+        config = dict(config)
+        config["last_sync_at"] = synced_at
+        config["last_sync_summary"] = {
+            "added": result.get("added_count", 0),
+            "updated": result.get("modified_count", 0),
+            "removed_pending": result.get("removed_pending_count", 0),
+        }
+        storage.save_config(config)
     properties = migrate_property_statuses(result["properties"])
     by_portal = result.get("by_portal_counts") or {}
     errors = result.get("errors") or {}
@@ -229,12 +259,14 @@ async def run_scan(request: Request) -> HTMLResponse:
             **ctx,
             "added_count": result["added_count"],
             "modified_count": result.get("modified_count", 0),
+            "removed_pending_count": result.get("removed_pending_count", 0),
             "rejected_count": result["rejected_count"],
             "accepted_count": result["accepted_count"],
             "source": result.get("source", "portals"),
             "imap_enabled": result.get("imap_enabled", False),
             "portal_summary": portal_summary,
             "errors_summary": errors_summary,
+            "last_sync_label": _format_last_sync(synced_at),
         },
     )
 

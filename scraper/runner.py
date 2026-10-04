@@ -10,7 +10,8 @@ from typing import Any, Callable
 from scraper import fotocasa, habitaclia, idealista, pisos
 from scraper.dedupe import dedupe_keep_cheapest, listing_fingerprint
 from scraper.email_inbox import imap_enabled
-from scraper.filter_engine import filter_properties
+from scraper.filter_engine import filter_properties, reapply_filters_to_pending
+from scraper.pisos import enrich_missing_images
 
 PortalFetcher = Callable[[dict[str, Any]], list[dict[str, Any]]]
 
@@ -317,7 +318,7 @@ def run_portal_scan(
     config: dict[str, Any],
     catalog_fallback: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Run multi-portal collection; optional fallback catalog (disabled in prod UX)."""
+    """Refresh listings from portals, merge changes, and clean pending mismatches."""
     by_portal, errors = collect_from_portals(config)
     combined: list[dict[str, Any]] = []
     for listings in by_portal.values():
@@ -330,11 +331,17 @@ def run_portal_scan(
 
     accepted, rejected = filter_properties(combined, config)
     accepted = dedupe_keep_cheapest(accepted)
+    # Only hit detail pages for accepted ads still missing photos.
+    accepted = enrich_missing_images(accepted, limit=24, min_images=1)
     merged, added, modified = _merge_new(existing, accepted)
+    # Keep pending list aligned with current criteria after every refresh.
+    cleaned, kept_pending, removed_pending = reapply_filters_to_pending(merged, config)
     return {
-        "properties": merged,
+        "properties": cleaned,
         "added_count": len(added),
         "modified_count": len(modified),
+        "removed_pending_count": removed_pending,
+        "kept_pending_count": kept_pending,
         "rejected_count": len(rejected),
         "accepted_count": len(accepted),
         "added": added,
@@ -344,4 +351,5 @@ def run_portal_scan(
         "by_portal_counts": {name: len(items) for name, items in by_portal.items()},
         "errors": errors,
         "imap_enabled": imap_enabled(),
+        "synced_at": _now_iso(),
     }

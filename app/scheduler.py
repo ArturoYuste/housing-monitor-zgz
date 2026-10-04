@@ -22,6 +22,15 @@ def _job() -> None:
             catalog_fallback=None,
         )
         storage.save_properties(result["properties"])
+        if result.get("synced_at"):
+            config = dict(storage.load_config())
+            config["last_sync_at"] = result["synced_at"]
+            config["last_sync_summary"] = {
+                "added": result.get("added_count", 0),
+                "updated": result.get("modified_count", 0),
+                "removed_pending": result.get("removed_pending_count", 0),
+            }
+            storage.save_config(config)
         logger.info(
             "Scheduled scan finished source=%s added=%s accepted=%s",
             result.get("source"),

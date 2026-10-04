@@ -1,11 +1,13 @@
 ﻿<div id="scan-feedback" class="scan-banner">
-  Escaneo ({{ source }}): {{ accepted_count }} pasan filtros,
-  {{ added_count }} nuevos en “Por revisar”,
-  {{ modified_count }} actualizados,
-  {{ rejected_count }} descartados por criterios.
-  {% if portal_summary %} Portales: {{ portal_summary }}.{% endif %}
-  {% if errors_summary %} Errores: {{ errors_summary }}.{% endif %}
+  <strong>Listo.</strong>
+  {{ added_count }} nuevas ·
+  {{ modified_count }} actualizadas ·
+  {{ removed_pending_count }} quitadas de pendientes.
+  <span class="muted">({{ accepted_count }} encajan ahora; {{ rejected_count }} se ignoraron en portales)</span>
+  {% if portal_summary %}<br>Portales: {{ portal_summary }}.{% endif %}
+  {% if errors_summary %}<br>Avisos: {{ errors_summary }}.{% endif %}
 </div>
+<p id="sync-meta-slot" class="sync-meta muted m-0" hx-swap-oob="true">{{ last_sync_label }}</p>
 <div id="tab-counts" class="tab-counts" hx-swap-oob="true">
   <div class="tabs" role="tablist" aria-label="Estado de anuncios">
     {% for key, label in statuses %}

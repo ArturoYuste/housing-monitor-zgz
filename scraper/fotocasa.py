@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 from scraper.http_client import feature_map, fetch_html, parse_euro_number, slugify_town
@@ -150,20 +151,31 @@ def fetch_listings(config: dict[str, Any] | None = None) -> list[dict[str, Any]]
     if not towns:
         return []
 
-    collected: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for town in towns:
+    def _fetch_town(town: str) -> list[dict[str, Any]]:
         try:
             html = fetch_html(build_search_url(str(town), config))
         except Exception:
-            continue
+            return []
+        found: list[dict[str, Any]] = []
         for item in _extract_real_estates(html):
             mapped = _map_item(item, str(town))
-            if not mapped:
+            if mapped:
+                found.append(mapped)
+        return found
+
+    collected: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    with ThreadPoolExecutor(max_workers=min(6, len(towns))) as pool:
+        futures = [pool.submit(_fetch_town, str(town)) for town in towns]
+        for future in as_completed(futures):
+            try:
+                batch = future.result()
+            except Exception:
                 continue
-            listing_id = mapped["id"]
-            if listing_id in seen:
-                continue
-            seen.add(listing_id)
-            collected.append(mapped)
+            for mapped in batch:
+                listing_id = mapped["id"]
+                if listing_id in seen:
+                    continue
+                seen.add(listing_id)
+                collected.append(mapped)
     return collected
