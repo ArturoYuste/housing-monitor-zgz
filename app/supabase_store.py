@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -46,17 +47,38 @@ class SupabaseStore:
         return result
 
     def save_properties(self, properties: list[dict[str, Any]]) -> None:
-        url = f"{self.base_url}/rest/v1/{self.properties_table}?on_conflict=id"
+        """Upsert current properties and delete ids that are no longer present."""
+        url = f"{self.base_url}/rest/v1/{self.properties_table}"
         rows = [{"id": item.get("id"), "data": item} for item in properties if item.get("id")]
-        if not rows:
-            return
+        keep_ids = {str(row["id"]) for row in rows}
+
         with httpx.Client(timeout=60.0) as client:
-            response = client.post(
-                url,
-                headers=self._headers(prefer="resolution=merge-duplicates,return=minimal"),
-                json=rows,
+            existing = client.get(
+                f"{url}?select=id",
+                headers=self._headers(),
             )
-            response.raise_for_status()
+            existing.raise_for_status()
+            existing_ids = {str(row.get("id")) for row in existing.json() if row.get("id")}
+            stale_ids = sorted(existing_ids - keep_ids)
+
+            # Delete stale rows in chunks (PostgREST in. filter).
+            for index in range(0, len(stale_ids), 50):
+                chunk = stale_ids[index : index + 50]
+                if not chunk:
+                    continue
+                # Use quoted list for ids that may contain special chars.
+                encoded = ",".join(quote(item, safe="") for item in chunk)
+                delete_url = f"{url}?id=in.({encoded})"
+                deleted = client.delete(delete_url, headers=self._headers())
+                deleted.raise_for_status()
+
+            if rows:
+                upsert = client.post(
+                    f"{url}?on_conflict=id",
+                    headers=self._headers(prefer="resolution=merge-duplicates,return=minimal"),
+                    json=rows,
+                )
+                upsert.raise_for_status()
 
     def load_config(self) -> dict[str, Any] | None:
         url = f"{self.base_url}/rest/v1/{self.config_table}?select=data&id=eq.main&limit=1"
