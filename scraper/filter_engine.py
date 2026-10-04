@@ -279,3 +279,39 @@ def filter_properties(
         else:
             rejected.append({**item, "reject_reason": reason})
     return accepted, rejected
+
+
+def reapply_filters_to_pending(
+    properties: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> tuple[list[dict[str, Any]], int, int]:
+    """Keep saved items; discard pending listings that no longer match filters.
+
+    Returns (updated_properties, kept_pending_count, discarded_count).
+    """
+    kept: list[dict[str, Any]] = []
+    discarded_count = 0
+    kept_pending = 0
+    for item in properties:
+        entry = dict(item)
+        status = (entry.get("status") or "pending").strip().lower()
+        if status in {"saved", "discarded"}:
+            kept.append(entry)
+            continue
+        ok, reason = matches_filters(entry, config)
+        if ok:
+            entry["status"] = "pending"
+            kept.append(entry)
+            kept_pending += 1
+        else:
+            entry["status"] = "discarded"
+            entry["is_modified"] = False
+            summary = list(entry.get("change_summary") or [])
+            note = f"filtrado: {reason}"
+            if note not in summary:
+                summary = [note] + summary
+            entry["change_summary"] = summary[:6]
+            kept.append(entry)
+            discarded_count += 1
+    return kept, kept_pending, discarded_count
+

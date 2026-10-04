@@ -15,16 +15,29 @@
         {% endif %}
       </p>
     </div>
-    <form
-      class="scan-form"
-      hx-post="/scan"
-      hx-target="#scan-feedback"
-      hx-swap="outerHTML"
-      hx-disabled-elt="button"
-      hx-indicator="#scan-loader"
-    >
-      <button class="button primary" type="submit">Buscar nuevos</button>
-    </form>
+    <div class="hero-actions">
+      <form
+        class="scan-form"
+        hx-post="/filters/apply"
+        hx-target="#scan-feedback"
+        hx-swap="outerHTML"
+        hx-disabled-elt="button"
+      >
+        <button class="button secondary" type="submit" title="Quita de pendientes los que ya no cumplen los criterios">
+          Aplicar filtros
+        </button>
+      </form>
+      <form
+        class="scan-form"
+        hx-post="/scan"
+        hx-target="#scan-feedback"
+        hx-swap="outerHTML"
+        hx-disabled-elt="button"
+        hx-indicator="#scan-loader"
+      >
+        <button class="button primary" type="submit">Buscar nuevos</button>
+      </form>
+    </div>
   </div>
 
   <div id="scan-loader" class="scan-loader htmx-indicator" aria-live="polite">

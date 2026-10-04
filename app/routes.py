@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import APIRouter, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import storage
+from scraper.filter_engine import reapply_filters_to_pending
 from scraper.runner import migrate_property_statuses, run_portal_scan
 
 router = APIRouter()
@@ -235,3 +237,36 @@ async def run_scan(request: Request) -> HTMLResponse:
             "errors_summary": errors_summary,
         },
     )
+
+
+@router.post("/filters/apply", response_class=HTMLResponse)
+async def apply_filters(request: Request) -> HTMLResponse:
+    """Re-apply current criteria to pending listings and hide mismatches."""
+    config = storage.load_config()
+    properties = _load_properties()
+    updated, kept_pending, discarded_count = reapply_filters_to_pending(properties, config)
+    storage.save_properties(updated)
+    properties = migrate_property_statuses(updated)
+    ctx = _list_context("pending", properties)
+    return templates.TemplateResponse(
+        request,
+        "partials/filter_apply_result.html",
+        {
+            **ctx,
+            "kept_pending": kept_pending,
+            "discarded_count": discarded_count,
+        },
+    )
+
+
+@router.post("/filters/apply-redirect")
+async def apply_filters_redirect() -> RedirectResponse:
+    config = storage.load_config()
+    properties = _load_properties()
+    updated, kept_pending, discarded_count = reapply_filters_to_pending(properties, config)
+    storage.save_properties(updated)
+    flash = (
+        f"Filtros aplicados: {kept_pending} pendientes se mantienen, "
+        f"{discarded_count} descartados."
+    )
+    return RedirectResponse(url=f"/?status=pending&flash={quote(flash)}", status_code=303)

@@ -1,0 +1,23 @@
+﻿<div id="scan-feedback" class="scan-banner">
+  Filtros aplicados a pendientes:
+  {{ kept_pending }} siguen en “Por revisar”,
+  {{ discarded_count }} descartados por no cumplir los criterios actuales.
+</div>
+<div id="tab-counts" class="tab-counts" hx-swap-oob="true">
+  <div class="tabs" role="tablist" aria-label="Estado de anuncios">
+    {% for key, label in statuses %}
+      <a
+        class="chip {% if key == active_status %}active{% endif %}"
+        href="/?status={{ key }}"
+        role="tab"
+        aria-selected="{{ 'true' if key == active_status else 'false' }}"
+      >
+        {{ label }}
+        <span class="count">{{ counts.get(key, 0) }}</span>
+      </a>
+    {% endfor %}
+  </div>
+</div>
+<div id="property-list" hx-swap-oob="true">
+  {% include "partials/property_list.html" %}
+</div>

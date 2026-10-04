@@ -75,5 +75,16 @@
       <a class="button ghost" href="/">Volver al dashboard</a>
     </div>
   </form>
+
+  <div class="settings-apply">
+    <h2>Aplicar a pendientes</h2>
+    <p class="muted">
+      No busca anuncios nuevos. Revisa los que ya tienes en “Por revisar” y descarta
+      los que no cumplan los criterios guardados ahora mismo.
+    </p>
+    <form method="post" action="/filters/apply-redirect">
+      <button class="button secondary" type="submit">Aplicar filtros a pendientes</button>
+    </form>
+  </div>
 </section>
 {% endblock %}
