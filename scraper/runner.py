@@ -23,6 +23,40 @@ PORTAL_FETCHERS: dict[str, PortalFetcher] = {
 
 PROTECTED_STATUSES = {"saved", "discarded"}
 
+# Fields refreshed from live portal data on rescan.
+REFRESH_FIELDS = (
+    "title",
+    "price",
+    "price_per_m2",
+    "size_m2",
+    "plot_m2",
+    "rooms",
+    "baths",
+    "location",
+    "description",
+    "main_image",
+    "images",
+    "url",
+    "portal",
+    "has_garden",
+    "has_plot",
+    "has_elevator",
+    "floor",
+)
+
+TRACKED_CHANGE_FIELDS = (
+    "price",
+    "title",
+    "size_m2",
+    "plot_m2",
+    "rooms",
+    "baths",
+    "location",
+    "description",
+    "main_image",
+    "url",
+)
+
 
 def _normalize_status(status: str | None) -> str:
     value = (status or "pending").strip().lower()
@@ -43,29 +77,117 @@ def migrate_property_statuses(properties: list[dict[str, Any]]) -> list[dict[str
         entry.setdefault("price_notes", "")
         entry.setdefault("negotiation_notes", "")
         entry.setdefault("alt_offers", [])
+        entry.setdefault("updated_at", "")
+        entry.setdefault("change_summary", [])
         migrated.append(entry)
     return migrated
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _norm_value(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, list):
+        return "|".join(str(x) for x in value)
+    return str(value).strip()
+
+
+def _diff_changes(old: dict[str, Any], new: dict[str, Any]) -> list[str]:
+    changes: list[str] = []
+    labels = {
+        "price": "precio",
+        "title": "título",
+        "size_m2": "metros",
+        "plot_m2": "parcela",
+        "rooms": "habitaciones",
+        "baths": "baños",
+        "location": "ubicación",
+        "description": "descripción",
+        "main_image": "foto principal",
+        "url": "enlace",
+    }
+    for field in TRACKED_CHANGE_FIELDS:
+        if _norm_value(old.get(field)) != _norm_value(new.get(field)):
+            if field == "price":
+                old_p = old.get("price")
+                new_p = new.get("price")
+                changes.append(f"precio {old_p or '—'} → {new_p or '—'}")
+            elif field == "description":
+                changes.append("descripción")
+            elif field == "main_image":
+                changes.append("fotos")
+            else:
+                changes.append(labels.get(field, field))
+    # Image count / set changes even if main stays same.
+    old_imgs = old.get("images") or []
+    new_imgs = new.get("images") or []
+    if _norm_value(old_imgs) != _norm_value(new_imgs) and "fotos" not in changes:
+        changes.append("fotos")
+    return changes
+
+
+def _apply_refresh(current: dict[str, Any], fresh: dict[str, Any], now: str) -> bool:
+    """Update stored listing from fresh portal data. Returns True if modified."""
+    changes = _diff_changes(current, fresh)
+    if not changes:
+        # Still refresh non-tracked fields quietly if needed, but no modified flag.
+        for field in REFRESH_FIELDS:
+            if field in fresh and fresh.get(field) is not None:
+                current[field] = fresh.get(field)
+        if current.get("price_per_m2") is None and current.get("price") and current.get("size_m2"):
+            current["price_per_m2"] = round(current["price"] / current["size_m2"])
+        return False
+
+    for field in REFRESH_FIELDS:
+        if field in fresh and fresh.get(field) is not None:
+            current[field] = fresh.get(field)
+    if current.get("price_per_m2") is None and current.get("price") and current.get("size_m2"):
+        current["price_per_m2"] = round(current["price"] / current["size_m2"])
+
+    current["updated_at"] = now
+    current["change_summary"] = changes
+    current["is_modified"] = True
+    return True
+
+
+def _find_existing(
+    item: dict[str, Any],
+    by_id: dict[str, dict[str, Any]],
+    by_url: dict[str, dict[str, Any]],
+) -> dict[str, Any] | None:
+    prop_id = item.get("id")
+    if prop_id and prop_id in by_id:
+        return by_id[prop_id]
+    url = item.get("url")
+    if url and url in by_url:
+        return by_url[url]
+    return None
 
 
 def _merge_new(
     existing: list[dict[str, Any]],
     accepted: list[dict[str, Any]],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     existing = migrate_property_statuses(existing)
     accepted = dedupe_keep_cheapest(accepted)
 
-    known_ids = {item.get("id") for item in existing}
-    known_urls = {item.get("url") for item in existing if item.get("url")}
-    fingerprint_index = {
-        listing_fingerprint(item): item for item in existing
-    }
+    by_id = {item.get("id"): item for item in existing if item.get("id")}
+    by_url = {item.get("url"): item for item in existing if item.get("url")}
+    fingerprint_index = {listing_fingerprint(item): item for item in existing}
 
     added: list[dict[str, Any]] = []
-    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    modified: list[dict[str, Any]] = []
+    now = _now_iso()
     merged = list(existing)
 
     for item in accepted:
-        if item.get("id") in known_ids or (item.get("url") and item.get("url") in known_urls):
+        current = _find_existing(item, by_id, by_url)
+        if current is not None:
+            if _apply_refresh(current, item, now):
+                modified.append(current)
             continue
 
         key = listing_fingerprint(item)
@@ -73,7 +195,7 @@ def _merge_new(
         if current is not None:
             current_status = _normalize_status(current.get("status"))
             if current_status in PROTECTED_STATUSES:
-                # Keep user decision; attach cheaper alt offer metadata if useful.
+                # Keep user decision; only record alternate portal offer.
                 alts = list(current.get("alt_offers") or [])
                 alts.append(
                     {
@@ -85,7 +207,7 @@ def _merge_new(
                 current["alt_offers"] = alts
                 continue
 
-            # Replace pending duplicate if the new one is cheaper.
+            # Replace pending duplicate if the new one is cheaper, else refresh current.
             try:
                 new_price = int(item.get("price") or 10**12)
                 old_price = int(current.get("price") or 10**12)
@@ -98,7 +220,10 @@ def _merge_new(
                 entry.setdefault("defects", "")
                 entry.setdefault("price_notes", "")
                 entry.setdefault("negotiation_notes", "")
-                entry["date_detected"] = entry.get("date_detected") or now
+                entry["date_detected"] = current.get("date_detected") or entry.get("date_detected") or now
+                entry["updated_at"] = now
+                entry["is_modified"] = True
+                entry["change_summary"] = ["reemplazado por oferta más barata"] + _diff_changes(current, entry)
                 if entry.get("price_per_m2") is None and entry.get("price") and entry.get("size_m2"):
                     entry["price_per_m2"] = round(entry["price"] / entry["size_m2"])
                 alts = list(entry.get("alt_offers") or [])
@@ -112,10 +237,14 @@ def _merge_new(
                 entry["alt_offers"] = alts
                 merged = [entry if x.get("id") == replaced_id else x for x in merged]
                 fingerprint_index[key] = entry
-                known_ids.add(entry.get("id"))
+                by_id[entry.get("id")] = entry
                 if entry.get("url"):
-                    known_urls.add(entry.get("url"))
+                    by_url[entry.get("url")] = entry
                 added.append(entry)
+                modified.append(entry)
+            else:
+                if _apply_refresh(current, item, now):
+                    modified.append(current)
             continue
 
         entry = deepcopy(item)
@@ -124,16 +253,19 @@ def _merge_new(
         entry.setdefault("price_notes", "")
         entry.setdefault("negotiation_notes", "")
         entry["date_detected"] = entry.get("date_detected") or now
+        entry["updated_at"] = ""
+        entry["is_modified"] = False
+        entry["change_summary"] = []
         if entry.get("price_per_m2") is None and entry.get("price") and entry.get("size_m2"):
             entry["price_per_m2"] = round(entry["price"] / entry["size_m2"])
         merged.append(entry)
         added.append(entry)
-        known_ids.add(entry.get("id"))
+        by_id[entry.get("id")] = entry
         if entry.get("url"):
-            known_urls.add(entry.get("url"))
+            by_url[entry.get("url")] = entry
         fingerprint_index[key] = entry
 
-    return merged, added
+    return merged, added, modified
 
 
 def _prepare_config(config: dict[str, Any]) -> dict[str, Any]:
@@ -198,13 +330,15 @@ def run_portal_scan(
 
     accepted, rejected = filter_properties(combined, config)
     accepted = dedupe_keep_cheapest(accepted)
-    merged, added = _merge_new(existing, accepted)
+    merged, added, modified = _merge_new(existing, accepted)
     return {
         "properties": merged,
         "added_count": len(added),
+        "modified_count": len(modified),
         "rejected_count": len(rejected),
         "accepted_count": len(accepted),
         "added": added,
+        "modified": modified,
         "rejected": rejected,
         "source": source,
         "by_portal_counts": {name: len(items) for name, items in by_portal.items()},

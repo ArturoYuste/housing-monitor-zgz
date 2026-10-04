@@ -34,7 +34,19 @@ def _counts(properties: list[dict[str, Any]]) -> dict[str, int]:
 
 def _sorted_for_status(properties: list[dict[str, Any]], status: str) -> list[dict[str, Any]]:
     filtered = [item for item in properties if (item.get("status") or "pending") == status]
-    return sorted(filtered, key=lambda item: item.get("date_detected") or "", reverse=True)
+    modified = [item for item in filtered if item.get("is_modified")]
+    rest = [item for item in filtered if not item.get("is_modified")]
+    modified_sorted = sorted(
+        modified,
+        key=lambda item: item.get("updated_at") or item.get("date_detected") or "",
+        reverse=True,
+    )
+    rest_sorted = sorted(
+        rest,
+        key=lambda item: item.get("date_detected") or "",
+        reverse=True,
+    )
+    return modified_sorted + rest_sorted
 
 
 def _optional_int(value: str | None) -> int | None:
@@ -214,6 +226,7 @@ async def run_scan(request: Request) -> HTMLResponse:
         {
             **ctx,
             "added_count": result["added_count"],
+            "modified_count": result.get("modified_count", 0),
             "rejected_count": result["rejected_count"],
             "accepted_count": result["accepted_count"],
             "source": result.get("source", "portals"),

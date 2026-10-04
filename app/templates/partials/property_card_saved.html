@@ -13,6 +13,11 @@
       <p class="muted m-0 saved-sub">{{ property.location }} ·
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
       </p>
+      {% if property.is_modified %}
+      <div class="change-badge" title="{{ (property.change_summary or [])|join(', ') }}">
+        Actualizado{% if property.change_summary %}: {{ property.change_summary|join(', ') }}{% endif %}
+      </div>
+      {% endif %}
     </div>
     <div class="actions">
       <a class="button secondary" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>

@@ -767,3 +767,22 @@ a {
 .property-grid--compact {
   overflow-x: clip;
 }
+
+
+.change-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+  margin-top: 0.15rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #fff3e6;
+  color: #8a4b00;
+  border: 1px solid rgba(138, 75, 0, 0.22);
+  font-size: 0.78rem;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
