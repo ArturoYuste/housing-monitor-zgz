@@ -7,8 +7,9 @@
       <h1>Embudo de inmuebles</h1>
       <p class="muted m-0 mt-2">Revisa pendientes, marca favoritos y descarta lo que no encaje.</p>
     </div>
-    <form hx-post="/scan" hx-target="#scan-feedback" hx-swap="outerHTML">
-      <button class="button primary" type="submit">Ejecutar escaneo demo</button>
+    <form hx-post="/scan" hx-target="#scan-feedback" hx-swap="outerHTML" hx-indicator="#scan-indicator">
+      <button class="button primary" type="submit">Ejecutar escaneo (portales)</button>
+      <span id="scan-indicator" class="muted" style="margin-left:0.5rem;display:none;">Escaneando pueblos…</span>
     </form>
   </div>
 

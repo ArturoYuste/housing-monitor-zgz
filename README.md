@@ -49,3 +49,20 @@ Abre [http://127.0.0.1:43127](http://127.0.0.1:43127).
 4. Until then, "Ejecutar escaneo" uses the demo catalog and still runs the same filters.
 
 Other portals (Fotocasa, Habitaclia, Pisos.com) are wired in the runner and will be filled next.
+
+## Portales activos ahora
+
+- **Fotocasa**, **Habitaclia**, **Pisos.com**: escaneo HTTP real por pueblos del config.
+- **Idealista**: pendiente de email/IMAP.
+- El botón "Ejecutar escaneo (portales)" consulta los portales activos y aplica filtros.
+
+## Opcional
+
+```bash
+# background scan every 30 minutes
+export SCAN_INTERVAL_MINUTES=30
+
+# Supabase sync (tables: properties, app_config with jsonb `data`)
+export SUPABASE_URL=...
+export SUPABASE_SERVICE_KEY=...
+```

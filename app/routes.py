@@ -74,6 +74,7 @@ async def settings_page(request: Request) -> HTMLResponse:
             "excluded_keywords_text": "\n".join(config.get("excluded_keywords") or []),
             "excluded_locations_text": ", ".join(config.get("excluded_locations") or []),
             "towns_text": "\n".join(config.get("towns") or config.get("locations") or []),
+            "enabled_portals_text": ", ".join(config.get("enabled_portals") or []),
             "saved": request.query_params.get("saved") == "1",
         },
     )
@@ -94,6 +95,8 @@ async def save_settings(
     excluded_keywords: str = Form(""),
     excluded_locations: str = Form(""),
     towns: str = Form(""),
+    enabled_portals: str = Form("fotocasa, habitaclia, pisos.com, idealista"),
+    scan_max_towns: str = Form(""),
 ) -> RedirectResponse:
     keywords = [line.strip() for line in excluded_keywords.splitlines() if line.strip()]
     excluded_location_list = [
@@ -118,6 +121,8 @@ async def save_settings(
             "excluded_keywords": keywords,
             "excluded_locations": excluded_location_list,
             "towns": town_list,
+            "enabled_portals": [part.strip() for part in enabled_portals.split(",") if part.strip()],
+            "scan_max_towns": _optional_int(scan_max_towns),
         }
     )
     return RedirectResponse(url="/settings?saved=1", status_code=303)
@@ -173,6 +178,10 @@ async def run_scan(request: Request) -> HTMLResponse:
     )
     storage.save_properties(result["properties"])
     properties = result["properties"]
+    by_portal = result.get("by_portal_counts") or {}
+    errors = result.get("errors") or {}
+    portal_summary = ", ".join(f"{name}={count}" for name, count in by_portal.items())
+    errors_summary = "; ".join(f"{name}: {msg}" for name, msg in errors.items())
     return templates.TemplateResponse(
         request,
         "partials/scan_result.html",
@@ -182,6 +191,8 @@ async def run_scan(request: Request) -> HTMLResponse:
             "accepted_count": result["accepted_count"],
             "source": result.get("source", "demo_catalog"),
             "imap_enabled": result.get("imap_enabled", False),
+            "portal_summary": portal_summary,
+            "errors_summary": errors_summary,
             "active_status": "pending",
             "statuses": STATUSES,
             "counts": _counts(properties),

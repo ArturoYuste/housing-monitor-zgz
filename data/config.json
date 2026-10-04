@@ -1,7 +1,10 @@
 ﻿{
   "province": "Zaragoza",
   "search_outside_city": true,
-  "property_types": ["house", "chalet"],
+  "property_types": [
+    "house",
+    "chalet"
+  ],
   "min_price": 50000,
   "max_price": 180000,
   "min_size_m2": 100,
@@ -44,5 +47,12 @@
     "La Muela",
     "Botorrita",
     "Mozota"
-  ]
+  ],
+  "enabled_portals": [
+    "fotocasa",
+    "habitaclia",
+    "pisos.com",
+    "idealista"
+  ],
+  "scan_max_towns": null
 }

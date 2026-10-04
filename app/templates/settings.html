@@ -51,6 +51,14 @@
       Aceptar reforma integral
     </label>
     <label class="full">
+      Portales activos (separados por coma)
+      <input type="text" name="enabled_portals" value="{{ enabled_portals_text }}" placeholder="fotocasa, habitaclia, pisos.com, idealista">
+    </label>
+    <label>
+      Máx. pueblos por escaneo (opcional)
+      <input type="number" name="scan_max_towns" value="{{ config.scan_max_towns or '' }}" placeholder="vacío = todos">
+    </label>
+    <label class="full">
       Pueblos donde buscar (uno por línea; también acepta comas)
       <textarea name="towns" rows="8" placeholder="Cuarte de Huerva&#10;Utebo&#10;Zuera">{{ towns_text }}</textarea>
     </label>
