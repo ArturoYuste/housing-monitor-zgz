@@ -40,3 +40,12 @@ Abre [http://127.0.0.1:43127](http://127.0.0.1:43127).
 - Scrapers reales (Fotocasa + Idealista por alertas email)
 - Persistencia en Supabase
 - Despliegue gratis en Render
+
+## Email / IMAP (Idealista)
+
+1. Copy `.env.example` to `.env` and fill IMAP settings.
+2. Set `IMAP_ENABLED=true` when ready.
+3. Create Idealista alerts to that inbox.
+4. Until then, "Ejecutar escaneo" uses the demo catalog and still runs the same filters.
+
+Other portals (Fotocasa, Habitaclia, Pisos.com) are wired in the runner and will be filled next.

@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import storage
-from scraper.runner import run_demo_scan
+from scraper.runner import run_portal_scan
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
@@ -166,10 +166,10 @@ async def update_notes(
 
 @router.post("/scan", response_class=HTMLResponse)
 async def run_scan(request: Request) -> HTMLResponse:
-    result = run_demo_scan(
-        catalog=storage.load_demo_catalog(),
+    result = run_portal_scan(
         existing=storage.load_properties(),
         config=storage.load_config(),
+        catalog_fallback=storage.load_demo_catalog(),
     )
     storage.save_properties(result["properties"])
     properties = result["properties"]
@@ -180,6 +180,8 @@ async def run_scan(request: Request) -> HTMLResponse:
             "added_count": result["added_count"],
             "rejected_count": result["rejected_count"],
             "accepted_count": result["accepted_count"],
+            "source": result.get("source", "demo_catalog"),
+            "imap_enabled": result.get("imap_enabled", False),
             "active_status": "pending",
             "statuses": STATUSES,
             "counts": _counts(properties),
