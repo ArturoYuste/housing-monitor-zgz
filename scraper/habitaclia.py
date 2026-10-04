@@ -41,10 +41,12 @@ def _parse_card(article, town: str) -> dict[str, Any] | None:
     baths_match = re.search(r"(\d+)\s*bañ", text, re.I)
     title = article.get("aria-label") or text[:80]
     images: list[str] = []
-    for img in article.select("img[src]"):
-        src = img.get("src") or ""
-        if src and src not in images and "data:" not in src:
-            images.append(src)
+    for img in article.select("img"):
+        for attr in ("src", "data-src", "data-lazy", "data-original"):
+            src = img.get(attr) or ""
+            if src and src not in images and "data:" not in src and "logo" not in src.lower():
+                images.append(src)
+                break
     image = images[0] if images else ""
 
     external_id = link.rstrip("/").split("/")[-2] if "/d" in link else link
