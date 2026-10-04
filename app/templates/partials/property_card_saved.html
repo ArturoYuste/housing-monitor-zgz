@@ -6,14 +6,14 @@
 }.get(property.portal, property.portal) %}
 <article class="property-card property-card--saved">
   <div class="saved-head">
-    <div>
+    <div class="saved-head__text">
       <h2 class="compact-title">{{ property.title }}</h2>
       <p class="muted m-0">{{ property.location }} ·
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
       </p>
     </div>
     <div class="actions">
-      <a class="button ghost" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
+      <a class="button linkish" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
       <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
         <input type="hidden" name="status" value="discarded">
         <input type="hidden" name="current_status" value="saved">
