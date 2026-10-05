@@ -80,12 +80,23 @@ def migrate_property_statuses(properties: list[dict[str, Any]]) -> list[dict[str
         entry.setdefault("alt_offers", [])
         entry.setdefault("updated_at", "")
         entry.setdefault("change_summary", [])
+        entry.setdefault("is_withdrawn", False)
         migrated.append(entry)
     return migrated
 
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _norm_url(url: str | None) -> str:
+    """Stable identity helper: strip noise so the same listing matches across syncs."""
+    text = str(url or "").strip().lower()
+    if not text:
+        return ""
+    text = text.split("#", 1)[0]
+    text = text.split("?", 1)[0]
+    return text.rstrip("/")
 
 
 def _norm_value(value: Any) -> str:
@@ -162,7 +173,7 @@ def _find_existing(
     prop_id = item.get("id")
     if prop_id and prop_id in by_id:
         return by_id[prop_id]
-    url = item.get("url")
+    url = _norm_url(item.get("url"))
     if url and url in by_url:
         return by_url[url]
     return None
@@ -176,7 +187,7 @@ def _merge_new(
     accepted = dedupe_keep_cheapest(accepted)
 
     by_id = {item.get("id"): item for item in existing if item.get("id")}
-    by_url = {item.get("url"): item for item in existing if item.get("url")}
+    by_url = {_norm_url(item.get("url")): item for item in existing if _norm_url(item.get("url"))}
     fingerprint_index = {listing_fingerprint(item): item for item in existing}
 
     added: list[dict[str, Any]] = []
@@ -187,8 +198,13 @@ def _merge_new(
     for item in accepted:
         current = _find_existing(item, by_id, by_url)
         if current is not None:
+            # Identity match by stable id or URL: never auto-change user status.
+            preserved = _normalize_status(current.get("status"))
             if _apply_refresh(current, item, now):
                 modified.append(current)
+            current["status"] = preserved
+            if preserved == "saved":
+                current["is_withdrawn"] = False
             continue
 
         key = listing_fingerprint(item)
@@ -196,7 +212,8 @@ def _merge_new(
         if current is not None:
             current_status = _normalize_status(current.get("status"))
             if current_status in PROTECTED_STATUSES:
-                # Keep user decision; only record alternate portal offer.
+                # Keep saved/discarded forever unless the user changes status.
+                current["status"] = current_status
                 alts = list(current.get("alt_offers") or [])
                 alts.append(
                     {
@@ -206,6 +223,8 @@ def _merge_new(
                     }
                 )
                 current["alt_offers"] = alts
+                if current_status == "saved":
+                    current["is_withdrawn"] = False
                 continue
 
             # Replace pending duplicate if the new one is cheaper, else refresh current.
@@ -239,8 +258,9 @@ def _merge_new(
                 merged = [entry if x.get("id") == replaced_id else x for x in merged]
                 fingerprint_index[key] = entry
                 by_id[entry.get("id")] = entry
-                if entry.get("url"):
-                    by_url[entry.get("url")] = entry
+                norm = _norm_url(entry.get("url"))
+                if norm:
+                    by_url[norm] = entry
                 added.append(entry)
                 modified.append(entry)
             else:
@@ -262,8 +282,9 @@ def _merge_new(
         merged.append(entry)
         added.append(entry)
         by_id[entry.get("id")] = entry
-        if entry.get("url"):
-            by_url[entry.get("url")] = entry
+        norm = _norm_url(entry.get("url"))
+        if norm:
+            by_url[norm] = entry
         fingerprint_index[key] = entry
 
     return merged, added, modified
@@ -335,7 +356,20 @@ def run_portal_scan(
     accepted = enrich_missing_images(accepted, limit=24, min_images=1)
     merged, added, modified = _merge_new(existing, accepted)
     # Keep pending list aligned with current criteria after every refresh.
+    # Never touches saved/discarded statuses.
     cleaned, kept_pending, removed_pending = reapply_filters_to_pending(merged, config)
+
+    # Mark saved listings as withdrawn when portals no longer return them.
+    # Only when we actually got portal data (avoid false positives on empty/failed scans).
+    if combined:
+        live_ids = {item.get("id") for item in combined if item.get("id")}
+        live_urls = {_norm_url(item.get("url")) for item in combined if _norm_url(item.get("url"))}
+        for prop in cleaned:
+            if _normalize_status(prop.get("status")) != "saved":
+                continue
+            still_live = (prop.get("id") in live_ids) or (_norm_url(prop.get("url")) in live_urls)
+            prop["is_withdrawn"] = not still_live
+
     return {
         "properties": cleaned,
         "added_count": len(added),

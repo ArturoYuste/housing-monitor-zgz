@@ -1,19 +1,19 @@
 ﻿{% extends "base.html" %}
-{% block title %}Por revisar · Housing Monitor{% endblock %}
+{% block title %}{% if active_status == 'pending' %}Por revisar{% elif active_status == 'saved' %}Guardados{% else %}Descartados{% endif %} · Seguimiento de casas{% endblock %}
 {% block content %}
 <section class="panel">
   <div class="hero-row">
     <div>
       <h1>{% if active_status == 'pending' %}Por revisar{% elif active_status == 'saved' %}Guardados{% else %}Descartados{% endif %}</h1>
+      {% if active_status == 'pending' %}
       <p class="muted m-0 mt-2">
-        {% if active_status == 'pending' %}
-          Un solo listado: guarda lo interesante o descarta. Pulsa Actualizar para sincronizar con los portales.
-        {% elif active_status == 'saved' %}
-          Gestiona defectos, precio y negociación. Amplía fotos y descripción.
-        {% else %}
-          Histórico de anuncios descartados (incluye los que ya no cumplen tus criterios).
-        {% endif %}
+        Guarda lo interesante o descarta. Pulsa Actualizar para sincronizar con los portales.
       </p>
+      {% elif active_status == 'discarded' %}
+      <p class="muted m-0 mt-2">
+        Anuncios descartados. No vuelven a “Por revisar” al actualizar; puedes recuperarlos aquí.
+      </p>
+      {% endif %}
       <p id="sync-meta-slot" class="sync-meta muted m-0">{{ last_sync_label }}</p>
     </div>
     <div class="hero-actions">

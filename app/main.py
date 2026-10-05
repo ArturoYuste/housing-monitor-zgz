@@ -24,7 +24,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Housing Monitor", version="0.4.0", lifespan=lifespan)
+app = FastAPI(title="Seguimiento de casas", version="0.4.0", lifespan=lifespan)
 static_dir = Path(__file__).resolve().parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 app.include_router(router)

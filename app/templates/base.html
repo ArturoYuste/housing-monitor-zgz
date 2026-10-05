@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Housing Monitor{% endblock %}</title>
+  <title>{% block title %}Seguimiento de casas{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
@@ -15,11 +15,11 @@
   <div class="shell">
     <header class="topbar">
       <div class="brand">
-        <strong>Housing Monitor</strong>
+        <strong>Seguimiento de casas</strong>
         <span>Revisa, guarda y gestiona casas</span>
       </div>
       <nav class="nav">
-        <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Dashboard</a>
+        <a href="/" class="{% if request.url.path == '/' %}active{% endif %}">Listado</a>
         <a href="/settings" class="{% if request.url.path == '/settings' %}active{% endif %}">Criterios</a>
       </nav>
     </header>

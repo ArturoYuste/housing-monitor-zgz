@@ -1,4 +1,4 @@
-﻿# Housing Monitor
+﻿# Seguimiento de casas
 
 Panel web ligero para filtrar y gestionar casas en pueblos de Zaragoza (fuera de la ciudad). Primer slice: dashboard por estados, criterios editables y escaneo demo con motor de filtros.
 
@@ -30,7 +30,7 @@ Abre [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ## Qué incluye este slice
 
-- Dashboard: Pendientes, Favoritos, Contactados, Descartados
+- Listado: Por revisar, Guardados, Descartados
 - Cambio de estado y notas vía HTMX
 - Criterios (pueblos, precio, jardín/terreno, etc.) → `data/config.json`
 - Escaneo demo sobre `data/demo_catalog.json`

@@ -6,6 +6,10 @@
 }.get(property.portal, property.portal) %}
 {% set images = property.images if property.images else ([property.main_image] if property.main_image else []) %}
 {% set full = property.description or '' %}
+{% set defects = property.defects or '' %}
+{% set price_notes = property.price_notes or '' %}
+{% set negotiation_notes = property.negotiation_notes or '' %}
+{% set has_notes = (defects|trim) or (price_notes|trim) or (negotiation_notes|trim) %}
 <article class="property-card property-card--saved">
   <div class="saved-head">
     <div class="saved-head__text">
@@ -13,7 +17,10 @@
       <p class="muted m-0 saved-sub">{{ property.location }} ·
         {% if property.price %}{{ "{:,.0f}".format(property.price).replace(",", ".") }} €{% else %}—{% endif %}
       </p>
-      {% if property.is_modified %}
+      {% if property.is_withdrawn %}
+      <div class="withdrawn-badge">Retirado del portal — sigue en Guardados</div>
+      {% endif %}
+      {% if property.is_modified and not property.is_withdrawn %}
       <div class="change-badge" title="{{ (property.change_summary or [])|join(', ') }}">
         Actualizado{% if property.change_summary %}: {{ property.change_summary|join(', ') }}{% endif %}
       </div>
@@ -83,27 +90,35 @@
     </p>
   {% endif %}
 
-  <form
-    class="manage-form"
-    hx-post="/properties/{{ property.id }}/manage"
-    hx-target="#property-list"
-    hx-swap="innerHTML"
-  >
-    <input type="hidden" name="current_status" value="saved">
-    <label>
-      Defectos / estado
-      <textarea name="defects" rows="2" placeholder="Humedades, tejado, instalación eléctrica…">{{ property.defects }}</textarea>
-    </label>
-    <label>
-      Precio
-      <textarea name="price_notes" rows="2" placeholder="¿Encaja? ¿Sobreprecio? Referencias…">{{ property.price_notes }}</textarea>
-    </label>
-    <label>
-      Negociación
-      <textarea name="negotiation_notes" rows="2" placeholder="Contactos, ofertas hechas, respuesta…">{{ property.negotiation_notes }}</textarea>
-    </label>
-    <div class="actions">
-      <button class="button primary" type="submit">Guardar gestión</button>
-    </div>
-  </form>
+  <details class="manage-fold" {% if has_notes %}open{% endif %}>
+    <summary>
+      <span class="manage-fold__title">Notas de gestión</span>
+      <span class="manage-fold__hint">
+        {% if has_notes %}Defectos · Precio · Negociación{% else %}Pulsa para añadir defectos, precio o negociación{% endif %}
+      </span>
+    </summary>
+    <form
+      class="manage-form"
+      hx-post="/properties/{{ property.id }}/manage"
+      hx-target="#property-list"
+      hx-swap="innerHTML"
+    >
+      <input type="hidden" name="current_status" value="saved">
+      <label>
+        Defectos / estado
+        <textarea name="defects" rows="2" placeholder="Humedades, tejado, instalación eléctrica…">{{ defects }}</textarea>
+      </label>
+      <label>
+        Precio
+        <textarea name="price_notes" rows="2" placeholder="¿Encaja? ¿Sobreprecio? Referencias…">{{ price_notes }}</textarea>
+      </label>
+      <label>
+        Negociación
+        <textarea name="negotiation_notes" rows="2" placeholder="Contactos, ofertas hechas, respuesta…">{{ negotiation_notes }}</textarea>
+      </label>
+      <div class="actions">
+        <button class="button primary" type="submit">Guardar notas</button>
+      </div>
+    </form>
+  </details>
 </article>

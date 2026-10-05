@@ -977,3 +977,56 @@ body.lightbox-open {
   margin-top: 0.45rem;
   font-size: 0.9rem;
 }
+
+
+.withdrawn-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 0.35rem;
+  padding: 0.28rem 0.65rem;
+  border-radius: 999px;
+  background: #fde8e8;
+  color: #8b3a3a;
+  border: 1px solid rgba(139, 58, 58, 0.25);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.manage-fold {
+  border: 1px dashed rgba(47, 107, 79, 0.35);
+  border-radius: 14px;
+  background: rgba(215, 235, 224, 0.35);
+  padding: 0.15rem 0.75rem 0.75rem;
+}
+
+.manage-fold > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.7rem 0.1rem;
+  font-weight: 700;
+}
+
+.manage-fold > summary::-webkit-details-marker { display: none; }
+
+.manage-fold__title {
+  color: var(--accent);
+}
+
+.manage-fold__hint {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.manage-fold[open] {
+  border-style: solid;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.manage-fold[open] > summary {
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid var(--line);
+}
