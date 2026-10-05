@@ -30,6 +30,20 @@
     return count;
   }
 
+  function setCardVisible(card, visible) {
+    card.hidden = !visible;
+    card.classList.toggle("is-filter-hidden", !visible);
+    if (visible) {
+      card.removeAttribute("aria-hidden");
+    } else {
+      card.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function isCardVisible(card) {
+    return !card.classList.contains("is-filter-hidden") && !card.hidden;
+  }
+
   function updateHint(form) {
     var hint = document.querySelector("[data-list-filters-hint]");
     var countEl = document.querySelector("[data-list-filters-count]");
@@ -45,7 +59,7 @@
         : base;
     }
     if (countEl) {
-      var visible = cards().filter(function (card) { return !card.hidden; }).length;
+      var visible = cards().filter(isCardVisible).length;
       var total = cards().length;
       countEl.textContent = n ? ("Mostrando " + visible + " de " + total) : "";
     }
@@ -85,7 +99,7 @@
       if (ok && sizeMin != null) ok = size != null && size >= sizeMin;
       if (ok && withdrawnOnly) ok = withdrawn;
 
-      card.hidden = !ok;
+      setCardVisible(card, ok);
       if (ok) visibleCount += 1;
     });
 
@@ -95,9 +109,17 @@
     if (empty) {
       var showFilteredEmpty = cards().length > 0 && visibleCount === 0;
       empty.hidden = !showFilteredEmpty;
+      empty.classList.toggle("is-filter-hidden", !showFilteredEmpty);
     }
-    if (grid) grid.hidden = cards().length > 0 && visibleCount === 0;
-    if (nativeEmpty && cards().length > 0) nativeEmpty.hidden = true;
+    if (grid) {
+      var hideGrid = cards().length > 0 && visibleCount === 0;
+      grid.hidden = hideGrid;
+      grid.classList.toggle("is-filter-hidden", hideGrid);
+    }
+    if (nativeEmpty && cards().length > 0) {
+      nativeEmpty.hidden = true;
+      nativeEmpty.classList.add("is-filter-hidden");
+    }
 
     updateHint(form);
   }
@@ -112,21 +134,27 @@
 
   function bind() {
     var form = document.getElementById("list-filters-form");
-    if (!form || form.dataset.bound === "1") {
-      applyFilters();
-      return;
+    if (!form) return;
+    if (form.dataset.bound !== "1") {
+      form.dataset.bound = "1";
+      form.addEventListener("input", applyFilters);
+      form.addEventListener("change", applyFilters);
+      var clearBtn = document.querySelector("[data-list-filters-clear]");
+      if (clearBtn && clearBtn.dataset.bound !== "1") {
+        clearBtn.dataset.bound = "1";
+        clearBtn.addEventListener("click", clearFilters);
+      }
     }
-    form.dataset.bound = "1";
-    form.addEventListener("input", applyFilters);
-    form.addEventListener("change", applyFilters);
-    var clearBtn = document.querySelector("[data-list-filters-clear]");
-    if (clearBtn) clearBtn.addEventListener("click", clearFilters);
     applyFilters();
   }
 
   document.addEventListener("DOMContentLoaded", bind);
   document.body.addEventListener("htmx:afterSwap", function (event) {
-    if (event.target && (event.target.id === "property-list" || event.target.querySelector("#property-list"))) {
+    if (!event.target) {
+      applyFilters();
+      return;
+    }
+    if (event.target.id === "property-list" || (event.target.querySelector && event.target.querySelector("#property-list"))) {
       bind();
     }
     applyFilters();

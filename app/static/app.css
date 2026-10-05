@@ -198,6 +198,19 @@ a {
   gap: 0.55rem;
 }
 
+/* HTML [hidden] loses to author display:grid on cards; force hide for filters */
+.property-card[hidden],
+.property-card.is-filter-hidden,
+.property-grid[hidden],
+.property-grid.is-filter-hidden,
+#list-filters-empty[hidden],
+#list-filters-empty.is-filter-hidden,
+#property-list .empty[hidden],
+#property-list .empty.is-filter-hidden {
+  display: none !important;
+}
+
+
 .property-card {
   display: grid;
   grid-template-columns: 180px 1fr;
