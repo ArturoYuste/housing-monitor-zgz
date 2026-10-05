@@ -60,8 +60,13 @@
     </div>
   </div>
 
+  {% include "partials/list_filters.html" %}
+
   <div id="property-list">
     {% include "partials/property_list.html" %}
   </div>
 </section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/list-filters.js" defer></script>
 {% endblock %}

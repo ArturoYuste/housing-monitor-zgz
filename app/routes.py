@@ -25,7 +25,135 @@ STATUSES = [
     ("discarded", "Descartados"),
 ]
 
+PORTAL_LABELS = {
+    "fotocasa": "Fotocasa",
+    "habitaclia": "Habitaclia",
+    "pisos.com": "Pisos.com",
+    "idealista": "Idealista",
+}
+
 DESC_PREVIEW_LEN = 220
+
+
+def _resolve_town(location: str, towns: list[str]) -> str:
+    """Map a free-text location to a configured town when possible."""
+    loc = (location or "").strip()
+    if not loc:
+        return ""
+    lowered = loc.casefold()
+    matches = [town for town in towns if town and (town.casefold() in lowered or lowered in town.casefold())]
+    if matches:
+        return max(matches, key=len)
+    return loc.split(",")[0].strip()
+
+
+def _list_filter_options(
+    listed: list[dict[str, Any]],
+    config_towns: list[str],
+) -> dict[str, Any]:
+    portals: set[str] = set()
+    for item in listed:
+        portals.update(offer_portals(item))
+    towns = sorted(
+        {
+            _resolve_town(str(item.get("location") or ""), config_towns)
+            for item in listed
+        }
+        - {""}
+    )
+    return {
+        "filter_portals": sorted(portals),
+        "filter_towns": towns,
+        "portal_labels": PORTAL_LABELS,
+    }
+
+
+def _as_price(value: Any) -> int | None:
+    if value is None or value == "":
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def portal_offers(property_item: dict[str, Any]) -> list[dict[str, Any]]:
+    """Build unique portal offers for a listing (primary + alt_offers)."""
+    by_portal: dict[str, dict[str, Any]] = {}
+
+    def upsert(portal: str, url: str, price: Any, *, is_primary: bool = False) -> None:
+        portal_key = (portal or "").strip()
+        if not portal_key:
+            return
+        price_i = _as_price(price)
+        existing = by_portal.get(portal_key)
+        if existing is None:
+            by_portal[portal_key] = {
+                "portal": portal_key,
+                "url": url or "",
+                "price": price_i,
+                "is_primary": is_primary,
+            }
+            return
+        existing_price = existing.get("price")
+        cheaper = price_i is not None and (existing_price is None or price_i < existing_price)
+        if cheaper:
+            existing["price"] = price_i
+            if url:
+                existing["url"] = url
+        if is_primary:
+            existing["is_primary"] = True
+            if url:
+                existing["url"] = url or existing.get("url") or ""
+
+    upsert(
+        str(property_item.get("portal") or ""),
+        str(property_item.get("url") or ""),
+        property_item.get("price"),
+        is_primary=True,
+    )
+    for alt in property_item.get("alt_offers") or []:
+        if not isinstance(alt, dict):
+            continue
+        upsert(str(alt.get("portal") or ""), str(alt.get("url") or ""), alt.get("price"))
+
+    offers = list(by_portal.values())
+    offers.sort(
+        key=lambda item: (
+            item.get("price") is None,
+            item.get("price") if item.get("price") is not None else 10**12,
+            item.get("portal") or "",
+        )
+    )
+    cheapest_portal = next((o["portal"] for o in offers if o.get("price") is not None), None)
+    preferred = str(property_item.get("preferred_contact_portal") or "").strip()
+    if preferred not in by_portal:
+        preferred = ""
+    contact_portal = preferred or next((o["portal"] for o in offers if o.get("is_primary")), offers[0]["portal"] if offers else "")
+    for offer in offers:
+        offer["is_cheapest"] = bool(cheapest_portal and offer["portal"] == cheapest_portal)
+        offer["is_contact"] = offer["portal"] == contact_portal
+        offer["label"] = PORTAL_LABELS.get(offer["portal"], offer["portal"])
+    return offers
+
+
+def contact_offer(property_item: dict[str, Any]) -> dict[str, Any] | None:
+    offers = portal_offers(property_item)
+    for offer in offers:
+        if offer.get("is_contact"):
+            return offer
+    return offers[0] if offers else None
+
+
+def offer_portals(property_item: dict[str, Any]) -> list[str]:
+    return [offer["portal"] for offer in portal_offers(property_item)]
+
+
+templates.env.globals["resolve_town"] = _resolve_town
+templates.env.globals["portal_offers"] = portal_offers
+templates.env.globals["contact_offer"] = contact_offer
+templates.env.globals["offer_portals"] = offer_portals
+templates.env.globals["portal_labels"] = PORTAL_LABELS
 
 
 def _format_last_sync(value: str | None) -> str:
@@ -91,14 +219,25 @@ def _list_context(
     swap_tab_counts: bool = False,
 ) -> dict[str, Any]:
     props = properties if properties is not None else _load_properties()
+    listed = _sorted_for_status(props, active)
+    config = storage.load_config()
+    config_towns = [
+        str(town).strip()
+        for town in (config.get("towns") or config.get("locations") or [])
+        if str(town).strip()
+    ]
     return {
         "active_status": active,
         "statuses": STATUSES,
         "counts": _counts(props),
-        "properties": _sorted_for_status(props, active),
+        "properties": listed,
         "desc_preview_len": DESC_PREVIEW_LEN,
         "swap_tab_counts": swap_tab_counts,
+        "show_list_filters": active in {"pending", "saved"},
+        "config_towns": config_towns,
+        **_list_filter_options(listed, config_towns),
     }
+
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -228,6 +367,29 @@ async def update_management(
     )
     return templates.TemplateResponse(request, "partials/property_list.html", ctx)
 
+
+
+
+@router.post("/properties/{property_id}/preferred-portal", response_class=HTMLResponse)
+async def set_preferred_portal(
+    request: Request,
+    property_id: str,
+    portal: str = Form(...),
+    current_status: str = Form("pending"),
+) -> HTMLResponse:
+    """Remember which portal the user prefers when contacting a duplicate listing."""
+    valid = {key for key, _ in STATUSES}
+    chosen = (portal or "").strip()
+    prop = storage.find_property(property_id)
+    if prop is not None and chosen:
+        allowed = set(offer_portals(prop))
+        if chosen in allowed:
+            storage.update_property(property_id, preferred_contact_portal=chosen)
+    ctx = _list_context(
+        current_status if current_status in valid else "pending",
+        swap_tab_counts=True,
+    )
+    return templates.TemplateResponse(request, "partials/property_list.html", ctx)
 
 @router.post("/scan", response_class=HTMLResponse)
 async def run_scan(request: Request) -> HTMLResponse:

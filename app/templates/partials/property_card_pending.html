@@ -1,12 +1,18 @@
-﻿{% set portal_label = {
-  'fotocasa': 'Fotocasa',
-  'habitaclia': 'Habitaclia',
-  'pisos.com': 'Pisos.com',
-  'idealista': 'Idealista'
-}.get(property.portal, property.portal) %}
+﻿{% set portal_label = portal_labels.get(property.portal, property.portal) %}
 {% set images = property.images if property.images else ([property.main_image] if property.main_image else []) %}
 {% set full = property.description or '' %}
-<article class="property-card property-card--compact">
+{% set contact = contact_offer(property) %}
+{% set towns_for_card = config_towns if config_towns is defined else [] %}
+{% set card_town = resolve_town(property.location, towns_for_card) %}
+{% set card_portals = offer_portals(property)|join(',') %}
+<article
+  class="property-card property-card--compact"
+  data-filter-portals="{{ card_portals }}"
+  data-filter-town="{{ card_town }}"
+  data-filter-price="{{ property.price or '' }}"
+  data-filter-size="{{ property.size_m2 or '' }}"
+  data-filter-withdrawn="0"
+>
   <div class="compact-main">
     <div class="compact-media">
       {% if property.main_image %}
@@ -42,6 +48,7 @@
         {% if property.baths %}<span class="meta-pill">{{ property.baths }} baños</span>{% endif %}
         {% if property.has_garden or property.has_plot %}<span class="meta-pill">Jardín/terreno</span>{% endif %}
       </div>
+      {% include "partials/portal_offers.html" %}
       <div class="actions">
         {% if active_status == 'pending' %}
         <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
@@ -61,7 +68,9 @@
           <button class="button" type="submit">Volver a revisar</button>
         </form>
         {% endif %}
-        <a class="button secondary" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
+        <a class="button secondary" href="{{ contact.url if contact else property.url }}" target="_blank" rel="noopener noreferrer">
+          Ver anuncio{% if contact and contact.portal != property.portal %} ({{ portal_labels.get(contact.portal, contact.portal) }}){% endif %}
+        </a>
       </div>
     </div>
   </div>

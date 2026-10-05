@@ -1,0 +1,43 @@
+﻿{% set offers = portal_offers(property) %}
+{% set contact = contact_offer(property) %}
+{% if offers|length > 1 %}
+<div class="portal-offers" data-portal-offers>
+  <div class="portal-offers__label">También en</div>
+  <div class="portal-offers__badges" role="list">
+    {% for offer in offers %}
+    <a
+      class="portal-pill portal-pill--{{ offer.portal|replace('.', '-') }} {% if offer.is_contact %}is-contact{% endif %}"
+      href="{{ offer.url }}"
+      target="_blank"
+      rel="noopener noreferrer"
+      role="listitem"
+      title="{% if offer.price %}{{ '{:,.0f}'.format(offer.price)|replace(',', '.') }} €{% else %}Sin precio{% endif %}"
+    >
+      <span>{{ portal_labels.get(offer.portal, offer.portal) }}</span>
+      {% if offer.price %}<span class="portal-pill__price">{{ "{:,.0f}".format(offer.price).replace(",", ".") }} €</span>{% endif %}
+      {% if offer.is_cheapest %}<span class="portal-pill__tag">más barata</span>{% endif %}
+      {% if offer.is_contact %}<span class="portal-pill__tag portal-pill__tag--contact">contactar</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  <form
+    class="portal-offers__prefer"
+    hx-post="/properties/{{ property.id }}/preferred-portal"
+    hx-target="#property-list"
+    hx-swap="innerHTML"
+    hx-trigger="change"
+  >
+    <input type="hidden" name="current_status" value="{{ active_status }}">
+    <label>
+      Contactar en
+      <select name="portal">
+        {% for offer in offers %}
+        <option value="{{ offer.portal }}" {% if offer.is_contact %}selected{% endif %}>
+          {{ portal_labels.get(offer.portal, offer.portal) }}{% if offer.is_cheapest %} (más barata){% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+  </form>
+</div>
+{% endif %}

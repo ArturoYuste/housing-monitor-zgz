@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 
 from scraper import fotocasa, habitaclia, idealista, pisos
-from scraper.dedupe import dedupe_keep_cheapest, listing_fingerprint
+from scraper.dedupe import dedupe_keep_cheapest, listing_fingerprint, merge_alt_offers
 from scraper.email_inbox import imap_enabled
 from scraper.filter_engine import filter_properties, reapply_filters_to_pending
 from scraper.pisos import enrich_missing_images
@@ -81,6 +81,13 @@ def migrate_property_statuses(properties: list[dict[str, Any]]) -> list[dict[str
         entry.setdefault("updated_at", "")
         entry.setdefault("change_summary", [])
         entry.setdefault("is_withdrawn", False)
+        entry.setdefault("preferred_contact_portal", "")
+        primary = str(entry.get("portal") or "")
+        entry["alt_offers"] = [
+            alt
+            for alt in merge_alt_offers(list(entry.get("alt_offers") or []))
+            if alt.get("portal") and alt.get("portal") != primary
+        ]
         migrated.append(entry)
     return migrated
 
@@ -214,15 +221,21 @@ def _merge_new(
             if current_status in PROTECTED_STATUSES:
                 # Keep saved/discarded forever unless the user changes status.
                 current["status"] = current_status
-                alts = list(current.get("alt_offers") or [])
-                alts.append(
-                    {
-                        "portal": str(item.get("portal") or ""),
-                        "url": str(item.get("url") or ""),
-                        "price": str(item.get("price") or ""),
-                    }
-                )
-                current["alt_offers"] = alts
+                primary = str(current.get("portal") or "")
+                current["alt_offers"] = [
+                    alt
+                    for alt in merge_alt_offers(
+                        list(current.get("alt_offers") or []),
+                        [
+                            {
+                                "portal": str(item.get("portal") or ""),
+                                "url": str(item.get("url") or ""),
+                                "price": item.get("price"),
+                            }
+                        ],
+                    )
+                    if alt.get("portal") and alt.get("portal") != primary
+                ]
                 if current_status == "saved":
                     current["is_withdrawn"] = False
                 continue
@@ -237,24 +250,32 @@ def _merge_new(
                 replaced_id = current.get("id")
                 entry = deepcopy(item)
                 entry["status"] = "pending"
-                entry.setdefault("defects", "")
-                entry.setdefault("price_notes", "")
-                entry.setdefault("negotiation_notes", "")
+                entry.setdefault("defects", current.get("defects") or "")
+                entry.setdefault("price_notes", current.get("price_notes") or "")
+                entry.setdefault("negotiation_notes", current.get("negotiation_notes") or "")
+                entry["preferred_contact_portal"] = current.get("preferred_contact_portal") or ""
                 entry["date_detected"] = current.get("date_detected") or entry.get("date_detected") or now
                 entry["updated_at"] = now
                 entry["is_modified"] = True
                 entry["change_summary"] = ["reemplazado por oferta más barata"] + _diff_changes(current, entry)
                 if entry.get("price_per_m2") is None and entry.get("price") and entry.get("size_m2"):
                     entry["price_per_m2"] = round(entry["price"] / entry["size_m2"])
-                alts = list(entry.get("alt_offers") or [])
-                alts.append(
-                    {
-                        "portal": str(current.get("portal") or ""),
-                        "url": str(current.get("url") or ""),
-                        "price": str(current.get("price") or ""),
-                    }
-                )
-                entry["alt_offers"] = alts
+                primary = str(entry.get("portal") or "")
+                entry["alt_offers"] = [
+                    alt
+                    for alt in merge_alt_offers(
+                        list(entry.get("alt_offers") or []),
+                        list(current.get("alt_offers") or []),
+                        [
+                            {
+                                "portal": str(current.get("portal") or ""),
+                                "url": str(current.get("url") or ""),
+                                "price": current.get("price"),
+                            }
+                        ],
+                    )
+                    if alt.get("portal") and alt.get("portal") != primary
+                ]
                 merged = [entry if x.get("id") == replaced_id else x for x in merged]
                 fingerprint_index[key] = entry
                 by_id[entry.get("id")] = entry

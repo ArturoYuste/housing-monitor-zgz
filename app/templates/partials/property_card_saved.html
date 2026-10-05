@@ -1,16 +1,22 @@
-﻿{% set portal_label = {
-  'fotocasa': 'Fotocasa',
-  'habitaclia': 'Habitaclia',
-  'pisos.com': 'Pisos.com',
-  'idealista': 'Idealista'
-}.get(property.portal, property.portal) %}
+﻿{% set portal_label = portal_labels.get(property.portal, property.portal) %}
 {% set images = property.images if property.images else ([property.main_image] if property.main_image else []) %}
 {% set full = property.description or '' %}
 {% set defects = property.defects or '' %}
 {% set price_notes = property.price_notes or '' %}
 {% set negotiation_notes = property.negotiation_notes or '' %}
 {% set has_notes = (defects|trim) or (price_notes|trim) or (negotiation_notes|trim) %}
-<article class="property-card property-card--saved">
+{% set contact = contact_offer(property) %}
+{% set towns_for_card = config_towns if config_towns is defined else [] %}
+{% set card_town = resolve_town(property.location, towns_for_card) %}
+{% set card_portals = offer_portals(property)|join(',') %}
+<article
+  class="property-card property-card--saved"
+  data-filter-portals="{{ card_portals }}"
+  data-filter-town="{{ card_town }}"
+  data-filter-price="{{ property.price or '' }}"
+  data-filter-size="{{ property.size_m2 or '' }}"
+  data-filter-withdrawn="{{ '1' if property.is_withdrawn else '0' }}"
+>
   <div class="saved-head">
     <div class="saved-head__text">
       <h2 class="compact-title">{{ property.title }}</h2>
@@ -27,7 +33,9 @@
       {% endif %}
     </div>
     <div class="actions">
-      <a class="button secondary" href="{{ property.url }}" target="_blank" rel="noopener noreferrer">Ver anuncio</a>
+      <a class="button secondary" href="{{ contact.url if contact else property.url }}" target="_blank" rel="noopener noreferrer">
+        Ver anuncio{% if contact and contact.portal != property.portal %} ({{ portal_labels.get(contact.portal, contact.portal) }}){% endif %}
+      </a>
       <form hx-post="/properties/{{ property.id }}/status" hx-target="#property-list" hx-swap="innerHTML">
         <input type="hidden" name="status" value="discarded">
         <input type="hidden" name="current_status" value="saved">
@@ -59,6 +67,8 @@
     {% if property.has_garden or property.has_plot %}<span class="meta-pill">Jardín/terreno</span>{% endif %}
   </div>
 
+  {% include "partials/portal_offers.html" %}
+
   {% if full %}
   <div class="desc-fold">
     {% if full|length > desc_preview_len %}
@@ -80,14 +90,6 @@
       <p class="desc-full m-0">{{ full }}</p>
     {% endif %}
   </div>
-  {% endif %}
-
-  {% if property.alt_offers %}
-    <p class="muted alt-offers">Otras ofertas detectadas (más caras / otros portales):
-      {% for alt in property.alt_offers[:4] %}
-        <a href="{{ alt.url }}" target="_blank" rel="noopener noreferrer">{{ alt.portal }}{% if alt.price %} {{ alt.price }}€{% endif %}</a>{% if not loop.last %}, {% endif %}
-      {% endfor %}
-    </p>
   {% endif %}
 
   <details class="manage-fold" {% if has_notes %}open{% endif %}>

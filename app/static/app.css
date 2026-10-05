@@ -1030,3 +1030,173 @@ body.lightbox-open {
   margin-bottom: 0.35rem;
   border-bottom: 1px solid var(--line);
 }
+
+
+/* List filters (collapsed by default, same language as manage-fold notes) */
+.list-filters {
+  margin: 0.85rem 0 1rem;
+}
+
+.list-filters__form {
+  display: grid;
+  gap: 0.85rem;
+  padding-top: 0.35rem;
+}
+
+.list-filters__group {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.list-filters__group legend,
+.list-filters__field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.list-filters__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem 0.75rem;
+}
+
+.list-filters__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.list-filters__check--alone {
+  margin-top: 0.15rem;
+}
+
+.list-filters__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.list-filters__field input,
+.list-filters__field select,
+.portal-offers__prefer select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.55rem 0.7rem;
+  background: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  color: var(--ink);
+}
+
+.list-filters__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.list-filters-empty {
+  margin-top: 0.75rem;
+}
+
+/* Multi-portal duplicate offers */
+.portal-offers {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0.55rem 0 0.15rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  background: rgba(47, 107, 79, 0.06);
+  border: 1px solid rgba(47, 107, 79, 0.14);
+}
+
+.portal-offers__label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.portal-offers__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.portal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.28rem 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.portal-pill:hover {
+  border-color: rgba(47, 107, 79, 0.4);
+  transform: translateY(-1px);
+}
+
+.portal-pill.is-contact {
+  box-shadow: 0 0 0 2px rgba(47, 107, 79, 0.18);
+  border-color: rgba(47, 107, 79, 0.45);
+}
+
+.portal-pill__price {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.portal-pill__tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+}
+
+.portal-pill__tag--contact {
+  color: #1f4f3a;
+}
+
+.portal-offers__prefer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.portal-offers__prefer label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.portal-offers__prefer select {
+  min-width: 11rem;
+  width: auto;
+}
+
+.portal-pill--fotocasa { background: #fff4e8; }
+.portal-pill--habitaclia { background: #e8f4ff; }
+.portal-pill--pisos-com { background: #eef8ea; }
+.portal-pill--idealista { background: #fdeeee; }
+
+@media (max-width: 720px) {
+  .list-filters__row {
+    grid-template-columns: 1fr;
+  }
+}
