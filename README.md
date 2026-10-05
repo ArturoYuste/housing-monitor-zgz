@@ -43,18 +43,26 @@ Abre [http://127.0.0.1:43127](http://127.0.0.1:43127).
 
 ## Email / IMAP (Idealista)
 
-1. Copy `.env.example` to `.env` and fill IMAP settings.
-2. Set `IMAP_ENABLED=true` when ready.
-3. Create Idealista alerts to that inbox.
-4. Until then, "Ejecutar escaneo" uses the demo catalog and still runs the same filters.
+Idealista entra por alertas de email (no scraping web).
 
-Other portals (Fotocasa, Habitaclia, Pisos.com) are wired in the runner and will be filled next.
+En Render → Environment, define (sin pegar secretos en el chat):
+
+- `IMAP_ENABLED=true`
+- `IMAP_HOST=imap.gmail.com`
+- `IMAP_PORT=993`
+- `IMAP_USER` (cuenta que recibe las alertas)
+- `IMAP_PASSWORD` (contraseña de aplicación de Google)
+- `IMAP_FOLDER=INBOX` (o la etiqueta/carpeta que uses)
+
+Comprobación: `GET /healthz` debe mostrar `imap.enabled=true`, `imap.configured=true`, `imap.idealista_active=true`.
+
+En Idealista, crea alertas de casas/chalets hacia ese Gmail. Al pulsar **Actualizar**, el listado lee el correo y mete enlaces nuevos en **Por revisar**.
 
 ## Portales activos ahora
 
-- **Fotocasa**, **Habitaclia**, **Pisos.com**: escaneo HTTP real por pueblos del config.
-- **Idealista**: pendiente de email/IMAP.
-- El botón "Ejecutar escaneo (portales)" consulta los portales activos y aplica filtros.
+- **Fotocasa**, **Habitaclia**, **Pisos.com**: escaneo HTTP por pueblos.
+- **Idealista**: alertas email vía IMAP cuando `IMAP_ENABLED=true`.
+- El botón **Actualizar** consulta los portales activos y aplica filtros.
 
 ## Opcional
 

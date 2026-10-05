@@ -30,6 +30,3 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 app.include_router(router)
 
 
-@app.get("/healthz")
-async def healthz() -> dict[str, str]:
-    return {"status": "ok"}

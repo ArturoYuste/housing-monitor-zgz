@@ -202,6 +202,26 @@ def matches_filters(property_item: dict[str, Any], config: dict[str, Any]) -> tu
     if _is_apartment_in_building(property_item):
         return False, "apartment_in_building"
 
+    # Idealista email alerts often lack full structured fields. Keep hard safety
+    # checks (not a flat, price cap when known) and skip unknown garden/town/size.
+    if str(property_item.get("ingestion_source") or "") == "email_alert":
+        if not _is_house_like(property_item, config) and _normalize(
+            str(property_item.get("property_type") or "")
+        ) not in {"house", "chalet", "casa"}:
+            return False, "not_house_like"
+        max_price = config.get("max_price")
+        if max_price is not None and price is not None and price > max_price:
+            return False, "above_max_price"
+        min_price = config.get("min_price")
+        if min_price is not None and price is not None and price < min_price:
+            return False, "below_min_price"
+        haystack = _haystack(property_item)
+        for keyword in config.get("excluded_keywords") or []:
+            needle = _normalize(str(keyword))
+            if needle and needle in haystack:
+                return False, f"excluded_keyword:{keyword}"
+        return True, "ok"
+
     if not _is_house_like(property_item, config):
         return False, "not_house_like"
 

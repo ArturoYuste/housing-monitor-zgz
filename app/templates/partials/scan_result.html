@@ -5,6 +5,7 @@
   {{ removed_pending_count }} quitadas de pendientes.
   <span class="muted">({{ accepted_count }} encajan ahora; {{ rejected_count }} se ignoraron en portales)</span>
   {% if portal_summary %}<br>Portales: {{ portal_summary }}.{% endif %}
+  {% if imap_enabled %}<br>Idealista (correo IMAP): activo.{% else %}<br>Idealista (correo IMAP): inactivo.{% endif %}
   {% if errors_summary %}<br>Avisos: {{ errors_summary }}.{% endif %}
 </div>
 <p id="sync-meta-slot" class="sync-meta muted m-0" hx-swap-oob="true">{{ last_sync_label }}</p>

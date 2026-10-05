@@ -54,6 +54,11 @@
       Portales activos (separados por coma)
       <input type="text" name="enabled_portals" value="{{ enabled_portals_text }}" placeholder="fotocasa, habitaclia, pisos.com">
     </label>
+    <p class="muted full">
+      Idealista se activa solo con correo IMAP en el servidor
+      ({% if imap_enabled %}activo ahora{% else %}ahora mismo desactivado{% endif %}).
+      No hace falta añadirlo aquí.
+    </p>
     <label>
       Máx. pueblos por escaneo (opcional)
       <input type="number" name="scan_max_towns" value="{{ config.scan_max_towns or '' }}" placeholder="vacío = todos">

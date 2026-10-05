@@ -16,7 +16,7 @@ from scraper.pisos import enrich_missing_images
 PortalFetcher = Callable[[dict[str, Any]], list[dict[str, Any]]]
 
 PORTAL_FETCHERS: dict[str, PortalFetcher] = {
-    "idealista": lambda config: idealista.fetch_listings(),
+    "idealista": idealista.fetch_listings,
     "fotocasa": fotocasa.fetch_listings,
     "habitaclia": habitaclia.fetch_listings,
     "pisos.com": pisos.fetch_listings,
@@ -298,10 +298,13 @@ def _prepare_config(config: dict[str, Any]) -> dict[str, Any]:
         prepared["towns"] = towns[:max_towns]
     else:
         prepared["towns"] = towns
-    # Idealista deferred: ignore unless explicitly forced later.
-    enabled = [p for p in (prepared.get("enabled_portals") or []) if p != "idealista"]
+    enabled = [p for p in (prepared.get("enabled_portals") or []) if p]
+    # Strip stale idealista flag from saved config; re-add only when IMAP is on.
+    enabled = [p for p in enabled if p != "idealista"]
     if not enabled:
         enabled = ["fotocasa", "habitaclia", "pisos.com"]
+    if imap_enabled() and "idealista" not in enabled:
+        enabled.append("idealista")
     prepared["enabled_portals"] = enabled
     return prepared
 

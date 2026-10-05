@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -11,6 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from app import storage
+from scraper.email_inbox import imap_enabled
 from scraper.filter_engine import reapply_filters_to_pending
 from scraper.runner import migrate_property_statuses, run_portal_scan
 
@@ -302,3 +304,25 @@ async def apply_filters_redirect() -> RedirectResponse:
         f"{discarded_count} descartados."
     )
     return RedirectResponse(url=f"/?status=pending&flash={quote(flash)}", status_code=303)
+
+@router.get("/healthz")
+async def health_status() -> dict[str, Any]:
+    """Public health + IMAP readiness (never returns secrets)."""
+    user_set = bool(os.getenv("IMAP_USER", "").strip())
+    password_set = bool(os.getenv("IMAP_PASSWORD", "").strip())
+    host = (os.getenv("IMAP_HOST") or "imap.gmail.com").strip()
+    folder = (os.getenv("IMAP_FOLDER") or "INBOX").strip()
+    enabled = imap_enabled()
+    return {
+        "status": "ok",
+        "imap": {
+            "enabled": enabled,
+            "configured": bool(enabled and user_set and password_set),
+            "user_set": user_set,
+            "password_set": password_set,
+            "host": host,
+            "folder": folder,
+            "idealista_active": bool(enabled and user_set and password_set),
+        },
+    }
+

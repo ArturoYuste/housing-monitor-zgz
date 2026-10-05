@@ -17,6 +17,10 @@ IDEALISTA_URL_RE = re.compile(
     rf"https?://(?:www\.)?idealista\.com/{URL_TAIL}",
     re.IGNORECASE,
 )
+INMUEBLE_PATH_RE = re.compile(
+    r"(?:https?://(?:www\.)?idealista\.com)?/inmueble/(\d+)/?",
+    re.IGNORECASE,
+)
 GENERIC_PORTAL_URL_RE = re.compile(
     rf"https?://(?:www\.)?(?:fotocasa\.es|habitaclia\.com|pisos\.com)/{URL_TAIL}",
     re.IGNORECASE,
@@ -65,20 +69,29 @@ def extract_alert_links(subject: str, body: str, message_id: str) -> list[AlertL
     """Extract property URLs from an alert email body."""
     found: list[AlertLink] = []
     seen: set[str] = set()
-    for pattern in (IDEALISTA_URL_RE, GENERIC_PORTAL_URL_RE):
-        for match in pattern.findall(body or ""):
-            url = match.rstrip(").,;>")
-            if url in seen:
-                continue
-            seen.add(url)
-            found.append(
-                AlertLink(
-                    url=url,
-                    portal=_detect_portal(url),
-                    subject=subject,
-                    message_id=message_id,
-                )
+    text = (subject or "") + "\n" + (body or "")
+
+    def _add(url: str, portal: str | None = None) -> None:
+        clean = url.rstrip(").,;>\"'")
+        if not clean or clean in seen:
+            return
+        seen.add(clean)
+        found.append(
+            AlertLink(
+                url=clean,
+                portal=portal or _detect_portal(clean),
+                subject=subject,
+                message_id=message_id,
             )
+        )
+
+    for pattern in (IDEALISTA_URL_RE, GENERIC_PORTAL_URL_RE):
+        for match in pattern.findall(text):
+            _add(match)
+
+    # Catch Idealista ids even when the host is stripped or wrapped by trackers.
+    for match in INMUEBLE_PATH_RE.finditer(text):
+        _add("https://www.idealista.com/inmueble/" + match.group(1) + "/", "idealista")
     return found
 
 
