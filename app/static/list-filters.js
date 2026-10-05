@@ -41,7 +41,7 @@
     }
     if (hint) {
       hint.textContent = n
-        ? n + (n === 1 ? " filtro activo" : " filtros activos") + " — pulsa para cambiar"
+        ? n + (n === 1 ? " filtro activo" : " filtros activos")
         : base;
     }
     if (countEl) {

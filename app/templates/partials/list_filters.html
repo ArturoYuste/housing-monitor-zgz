@@ -1,63 +1,67 @@
 ﻿{% if show_list_filters %}
-<details class="manage-fold list-filters" id="list-filters">
-  <summary>
-    <span class="manage-fold__title">Filtros del listado</span>
-    <span class="manage-fold__hint" data-list-filters-hint>
-      Portal · Pueblo · Precio · m²{% if active_status == 'saved' %} · Retirados{% endif %} — pulsa para filtrar
+<details class="list-filters" id="list-filters">
+  <summary class="list-filters__summary">
+    <span class="list-filters__summary-main">
+      <span class="list-filters__title">Filtros del listado</span>
+      <span class="list-filters__hint" data-list-filters-hint>
+        Portal · pueblo · precio · m²{% if active_status == 'saved' %} · retirados{% endif %}
+      </span>
     </span>
+    <span class="list-filters__chevron" aria-hidden="true"></span>
   </summary>
+
   <form class="list-filters__form" id="list-filters-form" onsubmit="return false;">
     {% if filter_portals %}
-    <fieldset class="list-filters__group">
-      <legend>Portal</legend>
-      <div class="list-filters__checks">
+    <div class="list-filters__block">
+      <p class="list-filters__label">Portal</p>
+      <div class="list-filters__chips" role="group" aria-label="Portal">
         {% for portal in filter_portals %}
-        <label class="list-filters__check">
+        <label class="list-filters__chip">
           <input type="checkbox" name="portal" value="{{ portal }}" data-list-filter="portal">
           <span>{{ portal_labels.get(portal, portal) }}</span>
         </label>
         {% endfor %}
       </div>
-    </fieldset>
+    </div>
     {% endif %}
 
-    {% if filter_towns %}
-    <label class="list-filters__field">
-      Pueblo
-      <select name="town" data-list-filter="town">
-        <option value="">Todos</option>
-        {% for town in filter_towns %}
-        <option value="{{ town }}">{{ town }}</option>
-        {% endfor %}
-      </select>
-    </label>
-    {% endif %}
+    <div class="list-filters__grid">
+      {% if filter_towns %}
+      <label class="list-filters__field list-filters__field--town">
+        <span class="list-filters__label">Pueblo</span>
+        <select name="town" data-list-filter="town">
+          <option value="">Todos</option>
+          {% for town in filter_towns %}
+          <option value="{{ town }}">{{ town }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      {% endif %}
 
-    <div class="list-filters__row">
       <label class="list-filters__field">
-        Precio mín. (€)
-        <input type="number" name="price_min" min="0" step="1000" inputmode="numeric" placeholder="Sin mínimo" data-list-filter="price_min">
+        <span class="list-filters__label">Precio mín.</span>
+        <input type="number" name="price_min" min="0" step="1000" inputmode="numeric" placeholder="€" data-list-filter="price_min">
       </label>
       <label class="list-filters__field">
-        Precio máx. (€)
-        <input type="number" name="price_max" min="0" step="1000" inputmode="numeric" placeholder="Sin máximo" data-list-filter="price_max">
+        <span class="list-filters__label">Precio máx.</span>
+        <input type="number" name="price_max" min="0" step="1000" inputmode="numeric" placeholder="€" data-list-filter="price_max">
       </label>
       <label class="list-filters__field">
-        m² mínimos
-        <input type="number" name="size_min" min="0" step="5" inputmode="numeric" placeholder="Cualquiera" data-list-filter="size_min">
+        <span class="list-filters__label">m² mínimos</span>
+        <input type="number" name="size_min" min="0" step="5" inputmode="numeric" placeholder="m²" data-list-filter="size_min">
       </label>
     </div>
 
     {% if active_status == 'saved' %}
-    <label class="list-filters__check list-filters__check--alone">
+    <label class="list-filters__toggle">
       <input type="checkbox" name="withdrawn_only" value="1" data-list-filter="withdrawn_only">
       <span>Solo retirados del portal</span>
     </label>
     {% endif %}
 
     <div class="list-filters__actions">
-      <button type="button" class="button secondary" data-list-filters-clear>Quitar filtros</button>
-      <span class="muted" data-list-filters-count></span>
+      <button type="button" class="list-filters__clear" data-list-filters-clear>Quitar filtros</button>
+      <span class="list-filters__count" data-list-filters-count></span>
     </div>
   </form>
 </details>
