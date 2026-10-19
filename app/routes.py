@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from collections import Counter
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -13,8 +14,13 @@ from fastapi.templating import Jinja2Templates
 
 from app import storage
 from scraper.email_inbox import imap_enabled
-from scraper.filter_engine import reapply_filters_to_pending
+from scraper.filter_engine import (
+    location_matches_any_town,
+    reject_reason_label_es,
+    reapply_filters_to_pending,
+)
 from scraper.runner import migrate_property_statuses, run_portal_scan
+from scraper.url_import import import_url
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent / "templates"))
@@ -40,11 +46,24 @@ def _resolve_town(location: str, towns: list[str]) -> str:
     loc = (location or "").strip()
     if not loc:
         return ""
-    lowered = loc.casefold()
-    matches = [town for town in towns if town and (town.casefold() in lowered or lowered in town.casefold())]
+    matches = [town for town in towns if town and location_matches_any_town(loc, [town])]
     if matches:
         return max(matches, key=len)
     return loc.split(",")[0].strip()
+
+
+def _idealista_reject_summary(rejected: list[dict[str, Any]]) -> str:
+    """Compact Spanish summary of Idealista filter drops."""
+    reasons: Counter[str] = Counter()
+    for item in rejected or []:
+        if str(item.get("portal") or "") != "idealista":
+            continue
+        reasons[reject_reason_label_es(str(item.get("reject_reason") or "otro"))] += 1
+    if not reasons:
+        return ""
+    parts = [f"{label} ({count})" for label, count in reasons.most_common(6)]
+    total = sum(reasons.values())
+    return f"Idealista descartados: {total} · " + ", ".join(parts)
 
 
 def _list_filter_options(
@@ -415,6 +434,7 @@ async def run_scan(request: Request) -> HTMLResponse:
     errors = result.get("errors") or {}
     portal_summary = ", ".join(f"{name}={count}" for name, count in by_portal.items())
     errors_summary = "; ".join(f"{name}: {msg}" for name, msg in errors.items())
+    idealista_reject_summary = _idealista_reject_summary(list(result.get("rejected") or []))
     ctx = _list_context("pending", properties)
     return templates.TemplateResponse(
         request,
@@ -430,7 +450,53 @@ async def run_scan(request: Request) -> HTMLResponse:
             "imap_enabled": result.get("imap_enabled", False),
             "portal_summary": portal_summary,
             "errors_summary": errors_summary,
+            "idealista_reject_summary": idealista_reject_summary,
             "last_sync_label": _format_last_sync(synced_at),
+        },
+    )
+
+
+@router.post("/import-url", response_class=HTMLResponse)
+async def import_listing_url(
+    request: Request,
+    url: str = Form(""),
+) -> HTMLResponse:
+    """Paste a portal listing URL and add it to Por revisar when it matches filters."""
+    config = storage.load_config()
+    existing = _load_properties()
+    message = ""
+    ok = False
+    try:
+        result = import_url(url, config=config, existing=existing)
+        ok = bool(result.get("ok"))
+        listing = result.get("listing") or {}
+        title = str(listing.get("title") or "Anuncio")[:80]
+        portal = PORTAL_LABELS.get(str(listing.get("portal") or ""), listing.get("portal") or "")
+        if ok:
+            storage.save_properties(result["properties"])
+            if result.get("already_present"):
+                message = f"Ya estaba en el listado: {portal} · {title}"
+            elif result.get("added_count"):
+                message = f"Añadido a Por revisar: {portal} · {title}"
+            else:
+                message = f"Actualizado en el listado: {portal} · {title}"
+        else:
+            reason = reject_reason_label_es(str(result.get("reason") or "otro"))
+            message = f"No se añadió ({reason}): {portal} · {title}"
+        properties = migrate_property_statuses(result.get("properties") or existing)
+    except Exception as exc:  # noqa: BLE001
+        ok = False
+        message = f"No se pudo importar: {exc}"
+        properties = existing
+    ctx = _list_context("pending", properties)
+    return templates.TemplateResponse(
+        request,
+        "partials/import_url_result.html",
+        {
+            **ctx,
+            "import_ok": ok,
+            "import_message": message,
+            "last_sync_label": _format_last_sync(storage.load_config().get("last_sync_at")),
         },
     )
 

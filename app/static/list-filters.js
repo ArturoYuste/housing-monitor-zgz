@@ -7,6 +7,23 @@
     return Array.from(document.querySelectorAll("#property-list .property-card"));
   }
 
+  function foldText(value) {
+    return String(value || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function townMatch(cardTown, selectedTown) {
+    if (!selectedTown) return true;
+    var a = foldText(cardTown);
+    var b = foldText(selectedTown);
+    if (!a || !b) return false;
+    return a === b || a.indexOf(b) !== -1 || b.indexOf(a) !== -1;
+  }
+
   function parseNum(value) {
     if (value == null || String(value).trim() === "") return null;
     var n = Number(value);
@@ -93,7 +110,7 @@
       if (portals.length) {
         ok = portals.some(function (p) { return cardPortals.indexOf(p) !== -1; });
       }
-      if (ok && town) ok = cardTown === town;
+      if (ok && town) ok = townMatch(cardTown, town);
       if (ok && priceMin != null) ok = price != null && price >= priceMin;
       if (ok && priceMax != null) ok = price != null && price <= priceMax;
       if (ok && sizeMin != null) ok = size != null && size >= sizeMin;

@@ -65,6 +65,25 @@ def main() -> None:
     assert matches_filters(city_flat, config)[0] is False
     assert matches_filters(building_flat, config)[0] is False
     assert matches_filters(house_with_apartment, config)[0] is True
+
+    # Flexible location: accents, containment, capital exclusion.
+    accented = {
+        **good,
+        "location": "Calle Mayor, Maria de Huerva",
+        "title": "Casa en Maria de Huerva",
+    }
+    config_towns = {
+        **config,
+        "towns": ["Utebo", "Cuarte de Huerva", "Alagón", "María de Huerva"],
+        "excluded_locations": ["Zaragoza capital", "Centro", "Delicias", "Actur"],
+    }
+    assert matches_filters(accented, config_towns)[0] is True
+    capital = {
+        **good,
+        "location": "Zaragoza",
+        "title": "Casa en Zaragoza capital",
+    }
+    assert matches_filters(capital, config_towns)[0] is False
     print("smoke_filter: ok")
 
 

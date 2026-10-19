@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from typing import Any
 
 
@@ -93,6 +94,164 @@ GARDEN_TOKENS = (
 
 def _normalize(text: str) -> str:
     return re.sub(r"\s+", " ", (text or "").strip().lower())
+
+
+def fold_text(text: str) -> str:
+    """Lowercase, strip accents, collapse whitespace for flexible matching."""
+    raw = _normalize(text)
+    decomposed = unicodedata.normalize("NFKD", raw)
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+
+
+# Common aliases / alternate spellings for Zaragoza-area towns.
+TOWN_ALIASES: dict[str, tuple[str, ...]] = {
+    "maria de huerva": ("maria de huerva", "maria huerva"),
+    "cuarte de huerva": ("cuarte de huerva", "cuarte huerva", "cuarte"),
+    "la puebla de alfinden": ("la puebla de alfinden", "puebla de alfinden", "puebla alfinden"),
+    "villanueva de gallego": ("villanueva de gallego", "villanueva gallego"),
+    "la muela": ("la muela", "muela"),
+    "epila": ("epila",),
+    "alagon": ("alagon",),
+    "pinseque": ("pinseque",),
+    "pedrola": ("pedrola",),
+    "zuera": ("zuera",),
+    "utebo": ("utebo",),
+    "cadrete": ("cadrete",),
+    "botorrita": ("botorrita",),
+    "mozota": ("mozota",),
+}
+
+# Signals that the listing is in Zaragoza capital (not an outer town).
+CAPITAL_EXACT = {
+    "zaragoza",
+    "zaragoza capital",
+    "zgz",
+}
+CAPITAL_DISTRICTS = {
+    "delicias",
+    "actur",
+    "universidad",
+    "casco historico",
+    "casco antiguo",
+    "centro",
+    "las fuentes",
+    "san jose",
+    "oliver",
+    "valdespartera",
+    "miralbueno",
+    "casablanca",
+    "torrero",
+    "parralalaisla",
+    "el rabal",
+    "arrabal",
+}
+
+
+def town_aliases(town: str) -> list[str]:
+    folded = fold_text(town)
+    aliases = list(TOWN_ALIASES.get(folded, ()))
+    if folded and folded not in aliases:
+        aliases.insert(0, folded)
+    # Also allow dropping a leading "la "/"el ".
+    for prefix in ("la ", "el ", "los ", "las "):
+        if folded.startswith(prefix):
+            short = folded[len(prefix) :]
+            if short and short not in aliases:
+                aliases.append(short)
+    return aliases
+
+
+def location_matches_town(location: str, town: str) -> bool:
+    loc = fold_text(location)
+    if not loc or not fold_text(town):
+        return False
+    for alias in town_aliases(town):
+        if alias and alias in loc:
+            return True
+    # Reverse containment for very short locations that are just the town.
+    town_fold = fold_text(town)
+    if loc in town_fold and len(loc) >= 4:
+        return True
+    return False
+
+
+def location_matches_any_town(location: str, towns: list[str]) -> bool:
+    return any(location_matches_town(location, town) for town in towns if str(town).strip())
+
+
+def is_zaragoza_capital_location(location: str, towns: list[str] | None = None) -> bool:
+    """True when location looks like Zaragoza city rather than an outer town."""
+    loc = fold_text(location)
+    if not loc:
+        return False
+    # If it clearly matches an allowed outer town, it is not capital-only.
+    if towns and location_matches_any_town(location, towns):
+        return False
+    if loc in CAPITAL_EXACT:
+        return True
+    # "Zaragoza" alone as municipality token, optionally with street noise.
+    if re.search(r"(^|[,\-/])\s*zaragoza\s*$", loc) or loc.endswith(" zaragoza"):
+        # Outer towns often end with ", zaragoza" (province). Keep those only if town matched above.
+        # Without a town match, trailing zaragoza after a district/street => capital.
+        head = loc.rsplit(" zaragoza", 1)[0].strip(" ,-/")
+        if not head or head in CAPITAL_DISTRICTS or head in CAPITAL_EXACT:
+            return True
+        # Street-like heads without a known town => treat as capital.
+        if not (towns and location_matches_any_town(head, towns)):
+            # Avoid flagging "cuarte de huerva zaragoza" if town match failed due to typo — already handled.
+            if head in CAPITAL_DISTRICTS or any(d in head for d in CAPITAL_DISTRICTS):
+                return True
+            # Bare "something, zaragoza" without town list match: capital if no configured town alias hits.
+            if "," in location or loc.endswith(" zaragoza"):
+                return True
+    if loc in CAPITAL_DISTRICTS:
+        return True
+    return False
+
+
+def location_is_excluded(location: str, excluded: list[str], towns: list[str] | None = None) -> bool:
+    loc = fold_text(location)
+    if not loc:
+        return False
+    if towns and location_matches_any_town(location, towns):
+        # Allowed town wins over broad excluded tokens like "Centro".
+        return False
+    for item in excluded:
+        needle = fold_text(item)
+        if not needle:
+            continue
+        if needle in {"zaragoza capital", "zaragoza"}:
+            if is_zaragoza_capital_location(location, towns):
+                return True
+            continue
+        if needle in loc or loc in needle:
+            return True
+    if is_zaragoza_capital_location(location, towns):
+        return True
+    return False
+
+
+REJECT_REASON_LABELS_ES = {
+    "apartment_in_building": "tipo (piso)",
+    "not_house_like": "tipo",
+    "above_max_price": "precio alto",
+    "below_min_price": "precio bajo",
+    "below_min_size": "m²",
+    "above_max_price_per_m2": "precio/m²",
+    "below_min_floor": "planta",
+    "missing_garden_or_plot": "sin jardín/terreno",
+    "below_min_rooms": "habitaciones",
+    "below_min_baths": "baños",
+    "location_excluded": "ubicación excluida",
+    "town_not_allowed": "ubicación",
+    "ok": "ok",
+}
+
+
+def reject_reason_label_es(reason: str) -> str:
+    if reason.startswith("excluded_keyword:"):
+        return "palabra excluida"
+    return REJECT_REASON_LABELS_ES.get(reason, reason)
 
 
 def _parse_floor(value: Any) -> int | None:
@@ -204,7 +363,7 @@ def matches_filters(property_item: dict[str, Any], config: dict[str, Any]) -> tu
 
     # Idealista email alerts often lack full structured fields. Keep hard safety
     # checks (not a flat, price cap when known) and skip unknown garden/town/size.
-    if str(property_item.get("ingestion_source") or "") == "email_alert":
+    if str(property_item.get("ingestion_source") or "") in {"email_alert", "manual_url"}:
         if not _is_house_like(property_item, config) and _normalize(
             str(property_item.get("property_type") or "")
         ) not in {"house", "chalet", "casa"}:
@@ -220,6 +379,31 @@ def matches_filters(property_item: dict[str, Any], config: dict[str, Any]) -> tu
             needle = _normalize(str(keyword))
             if needle and needle in haystack:
                 return False, f"excluded_keyword:{keyword}"
+        towns = [
+            str(x).strip()
+            for x in (config.get("towns") or config.get("locations") or [])
+            if str(x).strip()
+        ]
+        excluded_locations = [
+            str(x).strip() for x in (config.get("excluded_locations") or []) if str(x).strip()
+        ]
+        location = str(property_item.get("location", "") or "")
+        title_and_loc = f"{property_item.get('title', '')} {location}".strip()
+        # Soft: enforce location only when there is a usable signal.
+        if fold_text(title_and_loc):
+            matched_town = bool(towns) and (
+                location_matches_any_town(location, towns)
+                or location_matches_any_town(title_and_loc, towns)
+            )
+            if matched_town:
+                return True, "ok"
+            if location_is_excluded(title_and_loc, excluded_locations, towns):
+                return False, "location_excluded"
+            if is_zaragoza_capital_location(title_and_loc, towns):
+                return False, "location_excluded"
+            # Explicit location that does not match configured towns → drop.
+            if towns and fold_text(location):
+                return False, "town_not_allowed"
         return True, "ok"
 
     if not _is_house_like(property_item, config):
@@ -267,20 +451,28 @@ def matches_filters(property_item: dict[str, Any], config: dict[str, Any]) -> tu
             return False, f"excluded_keyword:{keyword}"
 
     excluded_locations = [
-        _normalize(x) for x in (config.get("excluded_locations") or []) if str(x).strip()
+        str(x).strip() for x in (config.get("excluded_locations") or []) if str(x).strip()
     ]
-    location = _normalize(str(property_item.get("location", "")))
-    if excluded_locations and any(item in location or location in item for item in excluded_locations):
-        return False, "location_excluded"
-
-    # Prefer explicit towns list; fall back to legacy "locations" key.
     towns = [
-        _normalize(x)
+        str(x).strip()
         for x in (config.get("towns") or config.get("locations") or [])
         if str(x).strip()
     ]
+    location = str(property_item.get("location", "") or "")
+    title_and_loc = f"{property_item.get('title', '')} {location}"
+
+    if location_is_excluded(location, excluded_locations, towns) or location_is_excluded(
+        title_and_loc, excluded_locations, towns
+    ):
+        # Only exclude when an allowed town is not present in title/location.
+        if not (towns and (location_matches_any_town(location, towns) or location_matches_any_town(title_and_loc, towns))):
+            return False, "location_excluded"
+
     if towns:
-        if not any(town in location or location in town for town in towns):
+        if not (
+            location_matches_any_town(location, towns)
+            or location_matches_any_town(title_and_loc, towns)
+        ):
             return False, "town_not_allowed"
 
     return True, "ok"

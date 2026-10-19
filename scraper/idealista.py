@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 from scraper.email_inbox import fetch_alert_links, imap_enabled, unique_urls
+from scraper.filter_engine import location_matches_any_town
 from scraper.http_client import parse_euro_number
 from scraper.portals import normalize_listing
 
@@ -38,9 +39,8 @@ def _infer_fields(subject: str, url: str) -> dict[str, Any]:
 
 
 def _guess_location(subject: str, towns: list[str]) -> str:
-    lowered = (subject or "").lower()
     for town in towns:
-        if town and town.lower() in lowered:
+        if town and location_matches_any_town(subject or "", [town]):
             return town
     return ""
 

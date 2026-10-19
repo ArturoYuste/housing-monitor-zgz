@@ -1,0 +1,40 @@
+﻿<details class="url-import" id="url-import">
+  <summary class="url-import__summary">
+    <span class="url-import__summary-main">
+      <span class="url-import__title">Pegar enlace de anuncio</span>
+      <span class="url-import__hint">Idealista, Fotocasa, Habitaclia o Pisos.com</span>
+    </span>
+    <span class="url-import__chevron" aria-hidden="true"></span>
+  </summary>
+  <form
+    class="url-import__form"
+    hx-post="/import-url"
+    hx-target="#scan-feedback"
+    hx-swap="outerHTML"
+    hx-disabled-elt="button"
+    hx-indicator="#import-loader"
+  >
+    <label class="url-import__field">
+      <span class="url-import__label">URL del anuncio</span>
+      <input
+        type="url"
+        name="url"
+        required
+        inputmode="url"
+        autocomplete="off"
+        placeholder="https://www.idealista.com/inmueble/…"
+      >
+    </label>
+    <div class="url-import__actions">
+      <button class="button primary" type="submit">Añadir a Por revisar</button>
+      <span class="muted url-import__note">Se aplican tus criterios; si no encaja, te decimos por qué.</span>
+    </div>
+  </form>
+  <div id="import-loader" class="scan-loader htmx-indicator" aria-live="polite">
+    <div class="scan-loader__spinner" aria-hidden="true"></div>
+    <div>
+      <strong>Leyendo el anuncio…</strong>
+      <p class="muted m-0">Traemos datos del enlace y comprobamos filtros.</p>
+    </div>
+  </div>
+</details>
